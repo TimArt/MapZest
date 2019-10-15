@@ -5,21 +5,19 @@ Main web app server functionality.
 """
 
 # DEBUG MODE - Remove this crap in the final thingy
-import cgitb
-cgitb.enable()
+#import cgitb
+#cgitb.enable()
 
+import util
 
-# Print headers
-print ("Content-Type: text/html\n")
+util.print_header()
 
 # Connect to DB
 
-# Print some crap
-print(b"""
-<html>
-    <body>
-        <h1>Yo Dis a Lil' Stupid Site</h1>
-        <p>Da purpose dis website to give you locations iz amazing.</p>
-    </body>
-</html>
-""")
+# Check url & token
+# If authenticated:
+#   show content
+# Else display unauthorized or redirect to login
+
+with open('views/login.html') as f:
+    print (f.read())
