@@ -21,9 +21,12 @@ class UndefinedRouteError (Exception):
 
 
 class Route:
+    HTTP_GET = 'GET'
+    HTTP_POST = 'POST'
+
     route_map = {
-        "get": {},
-        "post": {}
+        HTTP_GET: {},
+        HTTP_POST: {}
     }
 
     @classmethod
@@ -46,7 +49,7 @@ class Route:
         Defines an HTTP GET route at the specified `url_path` to run the
         specified `controller` code to display some dynamic View to the user.
         """
-        cls.route_map["get"][url_path] = ("controller", controller)
+        cls.route_map[cls.HTTP_GET][url_path] = ("controller", controller)
 
 
     @classmethod
@@ -56,7 +59,7 @@ class Route:
         bypasses a controller and goes straight to displaying a view. This is
         useful for any static pages in the site.
         """
-        cls.route_map["get"][url_path] = ("view", view)
+        cls.route_map[cls.HTTP_GET][url_path] = ("view", view)
 
 
     @classmethod
@@ -65,4 +68,4 @@ class Route:
         Defines an HTTP POST action at the specified `url_path` to run the
         specified `controller` code to process POSTed user data.
         """
-        cls.route_map["post"][url_path] = controller
+        cls.route_map[cls.HTTP_POST][url_path] = controller

@@ -1,96 +1,91 @@
 #!/usr/bin/env python
 
 """
-Main web app server functionality.
+Main web app user management server functionality.
+This is meant to be used with the Apache module mod_wsgi to run.
+
+For testing launch with:
+    mod_wsgi-express start-server <THIS FILE'S NAME>
 """
 
-
-import cgi
-import os
-from lib import *       # Our custom framework library
+import importlib
+from lib.Route import Route   # Our custom framework library
+from lib.View import View    # Our custom framework library
+from lib.util.util import *
 from routes import *    # Website routes
 
-# DEBUG MODE - Remove this crap in the final thingy this is much easier to see
-# errors than apache log
 import cgitb  # CGI Traceback Manager in Browser
 cgitb.enable()
 
 
-# Get environment variables
-REQUEST_METHOD = os.environ['REQUEST_METHOD'].lower()
-URL_PATH = "/"
-#URL_PATH = os.environ['REQUEST_URI']
+def application (environ, start_response):
+    """
+    Main WSGI Application
+    Based on input from `environ` about the HTTP request, we react by attempting
+    to route the request via the `attemptRoute` function. We then output the
+    associated HTTP Headers and return the content as a byte list.
 
-# Route request to correct page script handler
-try:
-    route_dest = Route.getDestination (REQUEST_METHOD, URL_PATH)
-    is_view = False
-    view_file = ""
-    controller_file = ""
+    @param enciron: environment variables such as request method
+    @param start_response: method to output HTTP status and headers
+    """
+    status_http, output_html = attemptRoute (environ)
 
-    if type (route_dest) is tuple:
-        if route_dest[0] == "view":
-            is_view = True
-            view_file = route_dest[1]
+    # Debug Output String
+    outputString = f'{output_html}\n\n\n{environ}'
+
+    outputBytes = outputString.encode (encoding='UTF-8', errors='strict')
+    response_headers = [('Content-type', 'text/html'),
+                        ('Content-Length', str(len(outputBytes)))]
+
+    # Send HTTP Headers
+    start_response (status_http, response_headers)
+
+    # Send Page Content as byte list
+    return [outputBytes]
+
+
+def attemptRoute (environ):
+    """
+    Attempts running a route based on environ input of HTTP request content.
+
+    @return (status, htmlOutput): a tuple containing the HTTP Status string and
+                                  an HTML output string
+    """
+    REQUEST_METHOD = environ['REQUEST_METHOD']
+    REQUEST_URI = environ['REQUEST_URI']
+
+    # Route request to correct page script handler
+    try:
+        route_dest = Route.getDestination (REQUEST_METHOD, REQUEST_URI)
+        is_view = False
+        view_file = ''
+        controller_file = ''
+
+        if type (route_dest) is tuple:
+            if route_dest[0] == "view":
+                is_view = True
+                view_file = route_dest[1]
+            else:
+                controller_file = route_dest[1]
         else:
-            controller_file = route_dest[1]
-    else:
-        controller_file = route_dest
+            controller_file = route_dest
 
 
-    if is_view:
-        # Render HTML
-        view = View ("views/" + view_file)
-        view.render()
-    else:
-        # ADD TO THIS
-        util.print_html_header()
-        print ("Need to finish controller launching code for application.")
+        # Return View
+        if is_view:
+            # Render HTML
+            view = View ("views/" + view_file)
+            return (HTTP_STATUS_OK, view.get())
+        else: # Run controller file
+            # mod = importlib.import_module (controller_file)
+            # mod.HelloWorld()
+            return (HTTP_STATUS_NOT_FOUND, HTTP_STATUS_NOT_FOUND_HTML)
 
-    util.print_debug_version_and_env()
-
-# If routing for a particular HTTP method and URL was not found, print 404 error
-except UndefinedRouteError:
-    print_error()
-
-# form = cgi.FieldStorage()
-
-# # Get data from fields
-# first_name = form.getvalue('first_name')
-# last_name  = form.getvalue('last_name')
+    except UndefinedRouteError:
+        return (HTTP_STATUS_NOT_FOUND, HTTP_STATUS_NOT_FOUND_HTML)
 
 
-# if environ.has_key('HTTP_COOKIE'):
-#    for cookie in map(strip, split(environ['HTTP_COOKIE'], ';')):
-#       (key, value ) = split(cookie, '=');
-#       if key == "UserID":
-#          user_id = value
 
-#       if key == "Password":
-#          password = value
-
-
-# Parse URL
-
-# QUERY_STRING # URL information
-
-# REQUEST_METHOD # HTTP Method GET or POST
-# CONTENT_LENGTH # Length of data sent in POST request
-
-# # Client info
-# HTTP_USER_AGENT # User agent of client
-# REMOTE_ADDR # Remote address of client making request
-# HTTP_COOKIE # Set cookies for the client
-
-
-# HTTP Header: "Location: URL" for redirecting if not authenticated
-# HTTP Header: "Set-Cookie: String" for setting cookies
-
-
-# Check route map and run code for route
-
-
-# Check url & token
-# If authenticated:
-#   show content
-# Else display unauthorized or redirect to login
+# Setup Debug Error Catching Middleware - setup config for this
+# from paste.exceptions.errormiddleware import ErrorMiddleware
+# application = ErrorMiddleware(application, debug=True)

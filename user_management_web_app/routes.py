@@ -1,4 +1,4 @@
-from lib import *
+from lib.Route import *
 
 Route.view ("/", "login.html")
 Route.view ("/login", "login.html")
