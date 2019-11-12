@@ -18,8 +18,7 @@ char* signIn(char* signInBuffer){
   char UserID[sizeof(signInBuffer)];
   char PassHash[32];
   //Set To Default Error Message
-  char* ReturnMessage;
-  memset(ReturnMessage, 0, 65);
+  char* ReturnMessage = malloc(65);
   do{
     currChar = signInBuffer[counter];
     UserID[counter] = currChar;
@@ -48,11 +47,7 @@ char* signIn(char* signInBuffer){
 
 short checkSignInToken(char* token){
   short returnBool = 0;
-  char tokenString[64];
-  int x = 0;
-  for(x = 0; x < 64; x++){
-    tokenString[x] = token[x];
-  }
+
   //SQL CHECK Token
 
   return returnBool;
@@ -60,8 +55,7 @@ short checkSignInToken(char* token){
 
 char* getMyLocation(char* token){
 
-  char* ReturnMessage;
-  memset(ReturnMessage, 0, 9);
+  char* ReturnMessage = malloc(9);
 
   if(checkSignInToken(token) == 0){
     return ReturnMessage;
@@ -70,7 +64,7 @@ char* getMyLocation(char* token){
   return ReturnMessage;
 }
 
-char setMyLocation(char* message){
+char updateMyLocation(char* message){
   int x;
   char token[64];
   char ReturnMessage = 0;
@@ -88,8 +82,7 @@ char setMyLocation(char* message){
 char* findMyFriendLocation(char* message){
   int x;
   char token[64];
-  char* ReturnMessage;
-  memset(ReturnMessage, 0, 9);
+  char* ReturnMessage = malloc(9);
   for(x = 0; x < 64; x++){
     token[x] = message[x];
   }
@@ -131,7 +124,7 @@ int main(){
   if(dbstatus == 1){
     return 1;
   }
-  while(1){
+
 
     int sockfd;
     struct sockaddr_in serverAddr;
@@ -150,17 +143,48 @@ int main(){
     serverAddr.sin_addr.s_addr=inet_addr(ADDRESS);
 
     bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
-
+  while(1){
     listen(sockfd, 5);
     addr_size = sizeof(newAddr);
 
     newSocket=accept(sockfd, (struct sockaddr*)&newAddr, &addr_size);
 
-    strcpy(buffer, "HELLO");
+    //strcpy(buffer, "HELLO");
 
-    //Recieve Message
-    //recv(newSocket, buffer, 1024, 0);
-    send(newSocket, buffer, strlen(buffer), 0);
+    //Recieve Message MAKE SURE IN JAVA TO PUT A CHAR AT THE BEGINNING
+    recv(newSocket, buffer, 1024, 0);
+    char* message = malloc(1023);
+    int tempx;
+    for(tempx = 0; tempx < sizeof(buffer)-1; tempx++){
+      message[tempx] = buffer[1+tempx];
+    }
+    if(buffer[0] == 's'){
+      strcpy(buffer, signIn(message));
+      //buffer = signIn(message);
+      send(newSocket, buffer, strlen(buffer), 0);
+    }else if(buffer[0] == 'g'){
+      char* justToken = malloc(64);
+      for(tempx = 0; tempx < 64; tempx++){
+        justToken[tempx] = buffer[tempx+1];
+      }
+      strcpy(buffer, getMyLocation(justToken));
+      //buffer = getMyLocation(justToken);
+      send(newSocket, buffer, strlen(buffer), 0);
+      free(justToken);
+    }else if(buffer[0] == 'u'){
+      buffer[0] = updateMyLocation(message);
+      //buffer = updateMyLocation(message);
+      send(newSocket, buffer, strlen(buffer), 0);
+    }else if(buffer[0] == 'f'){
+      strcpy(buffer, findMyFriendLocation(message));
+      //buffer = findMyFriendLocation(message);
+      send(newSocket, buffer, strlen(buffer), 0);
+    }else{
+      buffer[0] = 0;
+      send(newSocket, buffer, strlen(buffer), 0);
+    }
+
+    free(message);
 
   }
   return 0;
