@@ -29,15 +29,19 @@ def application (environ, start_response):
     @param enciron: environment variables such as request method
     @param start_response: method to output HTTP status and headers
     """
-    status_http, output_html = attemptRoute (environ)
+    status_http, added_headers, output_html = attemptRoute (environ)
 
     # Debug Output String
     #outputString = f'{output_html}\n\n\n{environ}'
     outputString = f'{output_html}'
-
     outputBytes = outputString.encode (encoding='UTF-8', errors='strict')
+
+
     response_headers = [('Content-type', 'text/html'),
                         ('Content-Length', str (len (outputBytes)))]
+
+    for header in added_headers:
+        response_headers.append (header)
 
     # Send HTTP Headers
     start_response (status_http, response_headers)
@@ -77,13 +81,13 @@ def attemptRoute (environ):
         if is_view:
             # Render HTML
             view = View (f"views/{view_file}")
-            return (HTTP_STATUS_OK, view.get())
+            return (HTTP_STATUS_OK, [], view.get())
         else:  # Run controller file
-            html = controller_cmd (parse_request (environ))
-            return (HTTP_STATUS_OK, html)
+            http_status, added_headers, html = controller_cmd (parse_request (environ))
+            return (http_status, added_headers, html)
 
     except UndefinedRouteError:
-        return (HTTP_STATUS_NOT_FOUND, HTTP_STATUS_NOT_FOUND_HTML)
+        return (HTTP_STATUS_NOT_FOUND, [], HTTP_STATUS_NOT_FOUND_HTML)
 
 
 def parse_request (environ):
