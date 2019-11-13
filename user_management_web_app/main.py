@@ -8,10 +8,10 @@ For testing launch with:
     mod_wsgi-express start-server <THIS FILE'S NAME>
 """
 
-import importlib
 from lib.Route import Route   # Our custom framework library
 from lib.View import View    # Our custom framework library
 from lib.util.util import *
+from lib.Cookies import Cookies
 from routes import *    # Website routes
 from cgi import parse_qs, escape
 
@@ -29,11 +29,13 @@ def application (environ, start_response):
     @param enciron: environment variables such as request method
     @param start_response: method to output HTTP status and headers
     """
+    Cookies.init (environ)
+
     status_http, added_headers, output_html = attemptRoute (environ)
 
     # Debug Output String
-    #outputString = f'{output_html}\n\n\n{environ}'
-    outputString = f'{output_html}'
+    outputString = f'{output_html}\n\n\n<h1>DEBUG</h1>\n<h2>Eniron:</h2>\n{environ}\n<h2>Cookies:</h2>\n{Cookies.getAll()}'
+    #outputString = f'{output_html}'
     outputBytes = outputString.encode (encoding='UTF-8', errors='strict')
 
 
