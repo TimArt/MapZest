@@ -13,18 +13,18 @@ class Response:
     output_html = ''
     headers_http = []
 
-    def __init__ (self, status_http, output_html, added_headers=[]):
+    def __init__ (self, status_http, output_html, headers_http=[]):
         assert (isinstance (status_http, str))
-        assert (isinstance (added_headers, list))
-        for header in added_headers:
+        assert (isinstance (output_html, str))
+        assert (isinstance (headers_http, list))
+        for header in headers_http:
             assert (isinstance (header, tuple))
             for item in header:
                 assert (isinstance (item, str))
-        assert (isinstance (output_html, str))
 
         self.status_http = status_http
-        self.added_headers = added_headers
         self.output_html = output_html
+        self.headers_http = headers_http
 
     @classmethod
     def okDisplay (cls, output_html):
@@ -40,7 +40,7 @@ class Response:
         Factory method to construct a Response for a redirect.
         """
         assert (isinstance (url_path, str))
-        return cls (HTTP_STATUS_REDIRECT, '', [('Location', url_path)])
+        return cls (HTTP_STATUS_REDIRECT, "", [('Location', url_path)])
 
     @classmethod
     def notFound404Error (cls):

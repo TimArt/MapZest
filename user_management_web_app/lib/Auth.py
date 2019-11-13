@@ -22,17 +22,25 @@ class Auth (Middleware):
 
         @return Response of None
         """
+        # If not authrorized, redirect, otherwize do nothing, continue route
         response = Response.redirect ('/login')
-
-        token = ''
-        # CONTACT DB AND CHECK FOR PRESENCE OF AUTH TOKEN - Test with file
-        with open (AUTH_TOKEN_TEST_DB_FILE, 'r') as file:
-            token = file.read()
-
-        if Cookies.get (AUTH_TOKEN_COOKIE_KEY) == token:
+        if Auth.is_authorized():
             response = None
 
         return response
+
+
+    @staticmethod
+    def is_authorized():
+        token = ''
+        # CONTACT DB AND CHECK FOR PRESENCE OF AUTH TOKEN - Test with file
+        try:
+            with open (AUTH_TOKEN_TEST_DB_FILE, 'r') as file:
+                token = file.read()
+        except FileNotFoundError:
+            pass
+
+        return Cookies.get (AUTH_TOKEN_COOKIE_KEY) == token
 
 
     @staticmethod
@@ -53,7 +61,9 @@ class Auth (Middleware):
             return False
 
         # Generate authentication token
-        auth_token = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
+        # auth_token = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
+        auth_token = secrets.token_hex (SECURE_TOKEN_NUM_BYTES)
+
         # STORE AUTH TOKEN IN DB - text file is test code
         with open(AUTH_TOKEN_TEST_DB_FILE, 'w') as file:
             file.write (auth_token)

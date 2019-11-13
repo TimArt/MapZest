@@ -9,6 +9,7 @@ from lib.View import View
 
 class IndexController:
 
+    @staticmethod
     def get (request):
         # GET FRIEND REQUESTS FROM DB
         friend_requests = ['timarterbury@gmail.com', 'yomamma@yomamma.com',

@@ -53,7 +53,7 @@ class Route:
         """
         cls.assertControllerType (controller_cmd)
         cls.assertMiddlewareTypes (middleware_cmd_list)
-        cls.route_map[cls.HTTP_GET][url_path] = (controller_cmd, middleware_list)
+        cls.route_map[cls.HTTP_GET][url_path] = (controller_cmd, middleware_cmd_list)
 
 
     @classmethod
@@ -65,7 +65,7 @@ class Route:
         """
         cls.assertViewType (view_file)
         cls.assertMiddlewareTypes (middleware_cmd_list)
-        cls.route_map[cls.HTTP_GET][url_path] = (view_file, middleware_list)
+        cls.route_map[cls.HTTP_GET][url_path] = (view_file, middleware_cmd_list)
 
 
     @classmethod
@@ -76,19 +76,19 @@ class Route:
         """
         cls.assertControllerType (controller_cmd)
         cls.assertMiddlewareTypes (middleware_cmd_list)
-        cls.route_map[cls.HTTP_POST][url_path] = (controller_cmd, middleware_list)
+        cls.route_map[cls.HTTP_POST][url_path] = (controller_cmd, middleware_cmd_list)
 
 
     # Private Assert Methods ===================================================
 
     @classmethod
     def assertControllerType (cls, controller_cmd):
-        assert (isinstance (controller_cmd, types.MethodType))
+        assert (isinstance (controller_cmd, types.FunctionType))
 
     @classmethod
     def assertMiddlewareTypes (cls, middleware_cmd_list):
         for middleware_cmd in middleware_cmd_list:
-            assert (isinstance (middleware_cmd, types.MethodType))
+            assert (isinstance (middleware_cmd, types.FunctionType))
 
     @classmethod
     def assertViewType (cls, view_file):

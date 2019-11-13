@@ -13,10 +13,12 @@ from lib.View import View    # Our custom framework library
 from lib.Response import *
 from lib.Cookies import Cookies
 from routes import *    # Website routes
+from config import *
 from cgi import parse_qs, escape
 
-import cgitb  # CGI Traceback Manager in Browser
-cgitb.enable()
+# if CONF_DEBUG:
+#   import cgitb  # CGI Traceback Manager in Browser which doesnt actually work :/
+#   cgitb.enable()
 
 
 def application (environ, start_response):
@@ -33,14 +35,16 @@ def application (environ, start_response):
 
     response = attemptRoute (environ)
 
-    # Debug Output String
-    outputString = f'{response.output_html}\n\n\n<h1>DEBUG</h1>\n<h2>Eniron:</h2>\n{environ}\n<h2>Cookies:</h2>\n{Cookies.getAll()}'
-    # outputString = f'{output_html}'
-    outputBytes = outputString.encode (encoding='UTF-8', errors='strict')
+    # Debug Output
+    if CONF_DEBUG:
+        response.output_html = f'{response.output_html}\n\n\n{get_debug_string (environ, response)}'
+
+
+    output_bytes = response.output_html.encode (encoding='UTF-8', errors='strict')
 
 
     response_headers = [('Content-type', 'text/html'),
-                        ('Content-Length', str (len (outputBytes)))]
+                        ('Content-Length', str (len (output_bytes)))]
 
     for header in response.headers_http:
         response_headers.append (header)
@@ -49,7 +53,7 @@ def application (environ, start_response):
     start_response (response.status_http, response_headers)
 
     # Send Page Content as byte list
-    return [outputBytes]
+    return [output_bytes]
 
 
 def attemptRoute (environ):
@@ -69,7 +73,7 @@ def attemptRoute (environ):
         controller_cmd = ''
         middleware_cmd_list = []
 
-        assert (isinstance (route_dest), tuple)
+        assert (isinstance (route_dest, tuple))
 
         if isinstance (route_dest[0], str):
             is_view = True
@@ -119,6 +123,14 @@ def parse_request (environ):
     return request_dict
 
 
-# Setup Debug Error Catching Middleware - setup config for this
-# from paste.exceptions.errormiddleware import ErrorMiddleware
-# application = ErrorMiddleware(application, debug=True)
+def get_debug_string (environ, response):
+    return (f"<h1>DEBUG</h1>\n"
+            f"<h2>Response:</h2>\n"
+            f"<ul>\n"
+            f"<li><strong>HTTP Status:</strong> {response.status_http}</li>\n"
+            f"<li><strong>HTTP Headers:</strong> {response.headers_http}</li>\n"
+            f"</ul>\n"
+            f"<h2>Cookies:</h2>\n"
+            f"{Cookies.getAll()}"
+            f"<h2>Eniron:</h2>\n"
+            f"{environ}\n")

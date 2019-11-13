@@ -4,5 +4,5 @@ from controllers.LoginController import *
 from controllers.IndexController import *
 
 Route.get ("/", IndexController.get, [Auth.run])
-Route.view ("/login", "login.html")
-Route.post ("/login", LoginController.login)
+Route.get ("/login", LoginController.get)
+Route.post ("/login", LoginController.post)
