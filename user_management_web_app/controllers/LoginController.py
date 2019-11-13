@@ -3,8 +3,9 @@
 """
 Login functionality.
 """
-from lib.util.util import *
-from lib.Cookies import Cookies
+from lib.Response import Response
+from lib.Auth import Auth
+
 
 class LoginController:
 
@@ -12,17 +13,10 @@ class LoginController:
         email = request.get ('email', [''])[0]  # Returns the first email value.
         password = request.get ('password', [''])[0]
 
-        is_authenticated = False
-        # CHECK IF USERNAME AND PASSWORD HASH ARE IN THE DB
-        is_authenticated = True
+        login_success = Auth.attempt_login (email, password)
 
-        # Stop if not authenticated
-        if not is_authenticated:
-            return (HTTP_STATUS_REDIRECT, [('Location', '/login')], '')
+        # If was not logged in, make them login again
+        if not login_success:
+            return Response.redirect ('/login')
 
-        # If was authenticated
-        # GENERATE AND STORE AUTH TOKEN
-
-        Cookies.set ('auth_token', 'AUTH_TOKEN_TEST_YO')
-
-        return (HTTP_STATUS_REDIRECT, [('Location', '/')], '') # Redirect home
+        return Response.redirect ('/')

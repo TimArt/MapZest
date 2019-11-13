@@ -3,46 +3,33 @@
 """
 Homepage functionality.
 """
-from lib.util.util import *
-from lib.Cookies import Cookies
+from lib.Response import Response
 from lib.View import View
+
 
 class IndexController:
 
     def get (request):
-        is_authenticated = False
-
-        # CONTACT DB AND CHECK FOR AUTH TOKEN
-        if Cookies.get ('auth_token') == 'AUTH_TOKEN_TEST_YO':
-            is_authenticated = True
-
-        # IF AUTH, GET EMAIL
-        user_email = 'ACCOUNT_EMAIL'
-
-        if not is_authenticated:
-            return (HTTP_STATUS_REDIRECT, [('Location', '/login')], '')
-
-
         # GET FRIEND REQUESTS FROM DB
         friend_requests = ['timarterbury@gmail.com', 'yomamma@yomamma.com',
                            'Idunno@whatever.com', 'heyheyhey@mmmk.org']
 
         # GET FRIEND LIST AND LOCATIONS FROM DB
-        friend_list =   {
-                            'joebob@qwert.poo' :
+        friend_list = {
+                        'joebob@qwert.poo':
                             {
-                                'latitude' : '8393.53324',
-                                'longitude' : '3920134.4'
+                                'latitude': '8393.53324',
+                                'longitude': '3920134.4'
                             },
-                            'another@wut.omg' :
+                            'another@wut.omg':
                             {
-                                'latitude' : '74344.44',
-                                'longitude' : '32442.4'
+                                'latitude': '74344.44',
+                                'longitude': '32442.4'
                             },
-                            'swagdank@wwww.com' :
+                            'swagdank@wwww.com':
                             {
-                                'latitude' : '74344.44',
-                                'longitude' : '32442.4'
+                                'latitude': '74344.44',
+                                'longitude': '32442.4'
                             }
                         }
 
@@ -66,5 +53,4 @@ class IndexController:
                         friend_list=''.join (friend_list_html_filled),
                         user_list=''.join (map (user_list_html.format, user_list)))
 
-        return (HTTP_STATUS_OK, [], main_page)
-
+        return Response.okDisplay (main_page)

@@ -6,6 +6,8 @@ and possibly a Controller. This is a singleton class that holds
 the routing map which is intended to be defined in routes.py.
 """
 
+import types
+
 
 class UndefinedRouteError (Exception):
     """
@@ -44,28 +46,50 @@ class Route:
 
 
     @classmethod
-    def get (cls, url_path, controller):
+    def get (cls, url_path, controller_cmd, middleware_cmd_list=[]):
         """
         Defines an HTTP GET route at the specified `url_path` to run the
         specified `controller` code to display some dynamic View to the user.
         """
-        cls.route_map[cls.HTTP_GET][url_path] = ("controller", controller)
+        cls.assertControllerType (controller_cmd)
+        cls.assertMiddlewareTypes (middleware_cmd_list)
+        cls.route_map[cls.HTTP_GET][url_path] = (controller_cmd, middleware_list)
 
 
     @classmethod
-    def view (cls, url_path, view):
+    def view (cls, url_path, view_file, middleware_cmd_list=[]):
         """
         A shortcut method for get() which also uses an HTTP GET action but
         bypasses a controller and goes straight to displaying a view. This is
         useful for any static pages in the site.
         """
-        cls.route_map[cls.HTTP_GET][url_path] = ("view", view)
+        cls.assertViewType (view_file)
+        cls.assertMiddlewareTypes (middleware_cmd_list)
+        cls.route_map[cls.HTTP_GET][url_path] = (view_file, middleware_list)
 
 
     @classmethod
-    def post (cls, url_path, controller):
+    def post (cls, url_path, controller_cmd, middleware_cmd_list=[]):
         """
         Defines an HTTP POST action at the specified `url_path` to run the
         specified `controller` code to process POSTed user data.
         """
-        cls.route_map[cls.HTTP_POST][url_path] = controller
+        cls.assertControllerType (controller_cmd)
+        cls.assertMiddlewareTypes (middleware_cmd_list)
+        cls.route_map[cls.HTTP_POST][url_path] = (controller_cmd, middleware_list)
+
+
+    # Private Assert Methods ===================================================
+
+    @classmethod
+    def assertControllerType (cls, controller_cmd):
+        assert (isinstance (controller_cmd, types.MethodType))
+
+    @classmethod
+    def assertMiddlewareTypes (cls, middleware_cmd_list):
+        for middleware_cmd in middleware_cmd_list:
+            assert (isinstance (middleware_cmd, types.MethodType))
+
+    @classmethod
+    def assertViewType (cls, view_file):
+        assert (isinstance (view_file, str))

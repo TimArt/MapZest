@@ -10,7 +10,7 @@ For testing launch with:
 
 from lib.Route import Route   # Our custom framework library
 from lib.View import View    # Our custom framework library
-from lib.util.util import *
+from lib.Response import *
 from lib.Cookies import Cookies
 from routes import *    # Website routes
 from cgi import parse_qs, escape
@@ -31,22 +31,22 @@ def application (environ, start_response):
     """
     Cookies.init (environ)
 
-    status_http, added_headers, output_html = attemptRoute (environ)
+    response = attemptRoute (environ)
 
     # Debug Output String
-    outputString = f'{output_html}\n\n\n<h1>DEBUG</h1>\n<h2>Eniron:</h2>\n{environ}\n<h2>Cookies:</h2>\n{Cookies.getAll()}'
-    #outputString = f'{output_html}'
+    outputString = f'{response.output_html}\n\n\n<h1>DEBUG</h1>\n<h2>Eniron:</h2>\n{environ}\n<h2>Cookies:</h2>\n{Cookies.getAll()}'
+    # outputString = f'{output_html}'
     outputBytes = outputString.encode (encoding='UTF-8', errors='strict')
 
 
     response_headers = [('Content-type', 'text/html'),
                         ('Content-Length', str (len (outputBytes)))]
 
-    for header in added_headers:
+    for header in response.headers_http:
         response_headers.append (header)
 
     # Send HTTP Headers
-    start_response (status_http, response_headers)
+    start_response (response.status_http, response_headers)
 
     # Send Page Content as byte list
     return [outputBytes]
@@ -56,8 +56,7 @@ def attemptRoute (environ):
     """
     Attempts running a route based on environ input of HTTP request content.
 
-    @return (status, htmlOutput): a tuple containing the HTTP Status string and
-                                  an HTML output string
+    @return Response: an HTTP response
     """
     REQUEST_METHOD = environ['REQUEST_METHOD']
     REQUEST_URI = environ['REQUEST_URI']
@@ -68,32 +67,39 @@ def attemptRoute (environ):
         is_view = False
         view_file = ''
         controller_cmd = ''
+        middleware_cmd_list = []
 
-        if type (route_dest) is tuple:
-            if route_dest[0] == "view":
-                is_view = True
-                view_file = route_dest[1]
-            else:
-                controller_cmd = route_dest[1]
+        assert (isinstance (route_dest), tuple)
+
+        if isinstance (route_dest[0], str):
+            is_view = True
+            view_file = route_dest[0]
         else:
-            controller_cmd = route_dest
+            controller_cmd = route_dest[0]
 
+        middleware_cmd_list = route_dest[1]
 
-        # Return View
+        # Run middleware before main route
+        for middleware_cmd in middleware_cmd_list:
+            middleware_response = middleware_cmd (environ)
+            if middleware_response is not None:
+                return middleware_response
+
+        # Return view or run controller to produce HTTP response with HTML
         if is_view:
-            # Render HTML
-            view = View (f"views/{view_file}")
-            return (HTTP_STATUS_OK, [], view.get())
+            return Response.okDisplay (View (f"views/{view_file}").get())
         else:  # Run controller file
-            http_status, added_headers, html = controller_cmd (parse_request (environ))
-            return (http_status, added_headers, html)
+            return controller_cmd (parse_request (environ))
 
     except UndefinedRouteError:
-        return (HTTP_STATUS_NOT_FOUND, [], HTTP_STATUS_NOT_FOUND_HTML)
+        return Response.notFound404Error()
 
 
 def parse_request (environ):
-    # the environment variable CONTENT_LENGTH may be empty or missing
+    """
+    Parses user post input of the HTTP request.
+    """
+    # environ variable CONTENT_LENGTH may be empty or missing
     try:
         request_body_size = int (environ.get ('CONTENT_LENGTH', 0))
     except (ValueError):
