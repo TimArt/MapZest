@@ -12,6 +12,7 @@ from lib.Route import Route   # Our custom framework library
 from lib.View import View    # Our custom framework library
 from lib.Response import *
 from lib.Cookies import Cookies
+from lib.config import *
 from routes import *    # Website routes
 from config import *
 from cgi import parse_qs, escape
@@ -40,7 +41,7 @@ def application (environ, start_response):
         response.output_html = f'{response.output_html}\n\n\n{get_debug_string (environ, response)}'
 
 
-    output_bytes = response.output_html.encode (encoding='UTF-8', errors='strict')
+    output_bytes = response.output_html.encode (encoding=ENCODING, errors='strict')
 
 
     response_headers = [('Content-type', 'text/html'),
@@ -115,10 +116,11 @@ def parse_request (environ):
     request_body = environ['wsgi.input'].read (request_body_size)
     request_dict = parse_qs (request_body.decode())
 
-    # Escape user input
+    # Escape user input except for 'password fields'
     for key, valList in request_dict.items():
-        for val in valList:
-            val = escape (val)
+        if key != 'password':
+            for val in valList:
+                val = escape (val)
 
     return request_dict
 

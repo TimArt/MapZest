@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-"""
-Homepage functionality.
-"""
 from lib.Response import Response
 from lib.View import View
 
 
 class IndexController:
+    """
+    Manages homepage account display.
+    """
 
     @staticmethod
     def get (request):
