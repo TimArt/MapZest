@@ -14,6 +14,7 @@ from enum import Enum
 #
 # Only friends if both have accepted status. Default is reject status
 
+
 class FriendStatus (Enum):
     unspecified = 0
     rejected = 1
