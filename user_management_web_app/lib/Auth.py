@@ -7,11 +7,11 @@ from lib.config import *
 import secrets
 import hashlib
 import os
+import psycopg2  # Postgres Connection
 
+# DEBUG STUFF
 AUTH_TOKEN_COOKIE_KEY = 'auth_token'
-
 AUTH_TOKEN_TEST_DB_FILE = 'token.txt'
-
 
 class Auth (Middleware):
 
@@ -34,15 +34,16 @@ class Auth (Middleware):
 
     @staticmethod
     def is_authorized():
-        token = ''
-        # CONTACT DB AND CHECK FOR PRESENCE OF AUTH TOKEN - Test with file
-        try:
-            with open (AUTH_TOKEN_TEST_DB_FILE, 'r') as file:
-                token = file.read()
-        except FileNotFoundError:
-            pass
+        cookie_token = Cookies.get (AUTH_TOKEN_COOKIE_KEY)
 
-        return Cookies.get (AUTH_TOKEN_COOKIE_KEY) == token
+        with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
+            with conn.cursor() as curs:
+                curs.execute ("SELECT does_user_auth_token_exist (%s, %s)",
+                              (User.email, cookie_token))
+                does_valid_token_exist = curs.fetchone()[0]
+
+        return does_valid_token_exist
+
 
 
     @staticmethod
@@ -64,12 +65,12 @@ class Auth (Middleware):
         # Otherwize continue to generate token
 
         # Generate authentication token
-        # auth_token = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
-        auth_token = secrets.token_hex (SECURE_TOKEN_NUM_BYTES)
+        auth_token = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
 
-        # STORE AUTH TOKEN IN DB - text file is test code
-        with open(AUTH_TOKEN_TEST_DB_FILE, 'w') as file:
-            file.write (auth_token)
+        with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
+            with conn.cursor() as curs:
+                curs.execute ("CALL create_user_auth_token (%s, %s)",
+                              (User.email, auth_token))
 
         # Store authentication token in cookie
         Cookies.set (AUTH_TOKEN_COOKIE_KEY, auth_token)

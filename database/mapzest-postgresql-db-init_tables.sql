@@ -27,10 +27,10 @@ CREATE TABLE users (
 );
 
 
-CREATE TABLE user_login_tokens (
+CREATE TABLE user_auth_tokens (
     user_id INTEGER UNIQUE NOT NULL,
-    password_reset_code BYTEA NOT NULL, -- 64 Bytes
-    requested_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    auth_token BYTEA NOT NULL, -- 64 Bytes
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
 
     FOREIGN KEY (user_id) REFERENCES users (user_id)
         ON UPDATE CASCADE
