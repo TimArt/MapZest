@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+
 class User:
-    email = '' # Set cookies for these and grab these via cookies api
-    user_id = -1
+    """
+    Static strings of cookie keys for associated User data.
+    """
+    AUTH_TOKEN_COOKIE_KEY = 'user_auth_token'
+    EMAIL_COOKIE_KEY = 'user_email'
+    USER_ID_COOKIE_KEY = 'user_id_email'

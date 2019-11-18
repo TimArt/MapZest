@@ -2,7 +2,6 @@
 
 from http import cookies
 
-
 class Cookies:
     """
     A global singleton class allowing for getting and setting cookies. Every
@@ -10,7 +9,7 @@ class Cookies:
     available cookies and every HTTP reply should send any cookies added to this
     singleton class.
     """
-    cookies_kv = cookies.SimpleCookie()
+    cookies_kv = cookies.SimpleCookie() # Initialized at app startup
 
     @classmethod
     def init (cls, environ):
@@ -19,10 +18,10 @@ class Cookies:
     @classmethod
     def get (cls, cookie_key):
         """
-        @return string cookie value for key or None if key not found
+        @return string cookie value for key or empty string if key not found
         """
-        cookie_val = cls.cookies_kv.get (cookie_key)
-        return None if (cookie_val == None) else cookie_val.value
+        morsel = cls.cookies_kv.get (cookie_key)
+        return "" if morsel is None else morsel.value
 
     @classmethod
     def set (cls, key, value):

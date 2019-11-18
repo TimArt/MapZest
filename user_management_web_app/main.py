@@ -13,6 +13,7 @@ from lib.View import View    # Our custom framework library
 from lib.Response import *
 from lib.Cookies import Cookies
 from lib.config import *
+from lib.Debug import Debug
 from routes import *    # Website routes
 from config import *
 from cgi import parse_qs, escape
@@ -32,6 +33,7 @@ def application (environ, start_response):
     @param enciron: environment variables such as request method
     @param start_response: method to output HTTP status and headers
     """
+   # Debug.reset()
     Cookies.init (environ)
 
     response = attemptRoute (environ)
@@ -127,12 +129,14 @@ def parse_request (environ):
 
 def get_debug_string (environ, response):
     return (f"<h1>DEBUG</h1>\n"
-            f"<h2>Response:</h2>\n"
+            f"<h2>User Debug Printing:</h2>"
+            f"{Debug.debug_string}\n"
+            f"<h2>HTTP Response:</h2>\n"
             f"<ul>\n"
             f"<li><strong>HTTP Status:</strong> {response.status_http}</li>\n"
             f"<li><strong>HTTP Headers:</strong> {response.headers_http}</li>\n"
             f"</ul>\n"
             f"<h2>Cookies:</h2>\n"
             f"{Cookies.getAll()}"
-            f"<h2>Eniron:</h2>\n"
+            f"<h2>Environ:</h2>\n"
             f"{environ}\n")
