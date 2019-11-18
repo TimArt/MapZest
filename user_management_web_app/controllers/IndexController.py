@@ -2,6 +2,8 @@
 
 from lib.Response import Response
 from lib.View import View
+from lib.User import *
+from lib.Cookies import Cookies
 
 
 class IndexController:
@@ -49,7 +51,7 @@ class IndexController:
                                          longitude=location['longitude']))
 
         main_page = View (f"views/index.html").get()
-        main_page = main_page.format (user_email=user_email,
+        main_page = main_page.format (user_email=Cookies.get (User.EMAIL_COOKIE_KEY),
                         friend_requests=''.join (map (friend_request_html.format, friend_requests)),
                         friend_list=''.join (friend_list_html_filled),
                         user_list=''.join (map (user_list_html.format, user_list)))

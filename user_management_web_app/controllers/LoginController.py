@@ -4,6 +4,9 @@ from lib.Response import Response
 from lib.Auth import Auth
 from lib.View import View
 from lib.config import *
+from lib.Debug import Debug
+import psycopg2  # Postgres Connection
+import secrets
 
 
 class LoginController:
@@ -39,9 +42,24 @@ class LoginController:
         email = request.get ('email', [''])[0]  # Returns the first email value.
         password = request.get ('password', [''])[0]
 
-        # password_hash_bytes = Auth.hash_password (password)
-        # CREATE USER IN DB with email and password_hash
-        # CREATE EMAIL VERIFICATION TOKEN IN DB
-        # SEND VERIFICATION EMAIL
+        if password is None or email is None:
+            return Response.okDisplay ("Bad Parameters Sent!")
 
-        return Response.okDisplay (View ('views/signup.html').get().format(user_email=email))
+        if len (password) <= 8:
+            return Response.okDisplay (View ('views/signup-error-password.html').get())
+
+        password_hash = Auth.hash_password (password)
+        email_verification_token_bytes = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
+
+        with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
+            with conn.cursor() as curs:
+                try:
+                    curs.execute ("CALL create_user (%s, %s, %s)",
+                                  (email, password_hash, email_verification_token_bytes))
+                    # TODO: SEND VERIFICATION EMAIL HERE
+                except psycopg2.Error as e:
+                    Debug.print (str(e))
+
+        # Regardless of actual user creation, we always report the same page so nobody can tell
+        # what emails have accounts.
+        return Response.okDisplay (View ('views/signup-success.html').get().format(user_email=email))

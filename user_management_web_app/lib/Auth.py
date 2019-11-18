@@ -65,6 +65,7 @@ class Auth (Middleware):
         # Connect to DB in a singular transaction
         with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
             with conn.cursor() as curs:
+
                 # FROM DB GET PASSWORD SALT+HASH COMBO (could be in a single column called hash)
                 # FROM the USER with user_email
                 # as variable : db_hash_bytes
@@ -101,7 +102,7 @@ class Auth (Middleware):
 
         salt = os.urandom (HASH_SALT_NUM_BYTES)
         key = hashlib.pbkdf2_hmac (HASH_ALGORITHM,
-                                   password.encode (encoding=ENCODING),
+                                   password_str.encode (encoding=ENCODING),
                                    salt,
                                    HASH_ITERATIONS)
         return salt + key
