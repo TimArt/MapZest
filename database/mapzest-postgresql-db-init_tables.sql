@@ -85,6 +85,11 @@ CREATE TABLE friends (
 
     PRIMARY KEY (user_1_id, user_2_id),
 
+    -- To ensure unique friend relationships it should not be possible to have
+    -- the user_2_id be the same or less than the user_1_id. Defines a consistent
+    -- ordering of ids when inputed into the table.
+    CHECK (user_1_id < user_2_id),
+
     -- Are foreign Key Refs are automatically indexed by Postgresql?
     FOREIGN KEY (user_1_id) REFERENCES users (user_id)
         ON UPDATE CASCADE

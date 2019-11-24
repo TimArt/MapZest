@@ -2,7 +2,11 @@
 
 from lib.Response import Response
 from lib.View import View
+from lib.Cookies import Cookies
+from lib.User import User
 from enum import Enum
+import psycopg2  # Postgres Connection
+from lib.config import *
 
 # In DB:
 # Friends Table =========
@@ -32,15 +36,11 @@ class FriendController:
         Adds a friend or accepts a friend request. A positive accept action is
         made by one user for another user.
         """
-        # user_email = User.email
-        # other_user_email = request.get ('user_email', [''])[0]  # Returns the first email value.
+        this_user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
+        related_user_email = request.get ('friend_email', [''])[0]
+        this_user_status = 'accepted'
 
-        # CHECK DB FOR ENTRY WITH BOTH USERS
-        # IF NO ENTRY:
-        #   CREATE ENTRY WHERE user_email has FriendStatus.accepted and other
-        #   FriendStatus.unspecified
-        # ELSE:
-        #   UPDATE ENTRY for user_email FriendStatus.accepted
+        FriendController.update_friend_status (this_user_email, related_user_email, this_user_status)
 
         return Response.redirect ('/')
 
@@ -51,16 +51,26 @@ class FriendController:
         Removes a friend or rejects a friend request. A negative reject action is
         made by one user for another user.
         """
-        # user_email = User.email
-        # other_user_email = request.get ('user_email', [''])[0]  # Returns the first email value.
+        this_user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
+        related_user_email = request.get ('friend_email', [''])[0]
+        this_user_status = 'rejected'
 
-        # CHECK DB FOR ENTRY WITH BOTH USERS
-        # IF NO ENTRY:
-        #   DON'T DO ANYTHING
-        # ELSE:
-        #   UPDATE ENTRY for user_email FriendStatus.rejected
+        FriendController.update_friend_status (this_user_email, related_user_email, this_user_status)
 
         return Response.redirect ('/')
+
+
+    @staticmethod
+    def update_friend_status (this_user_email, related_user_email, this_user_status):
+        with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
+            with conn.cursor() as curs:
+                try:
+                    curs.execute ("CALL set_user_friend_status (%s, %s, %s)",
+                                  (this_user_email, related_user_email, this_user_status))
+                except psycopg2.Error:
+                    # Debug.print (str(e))
+                    pass  # Continue regardless of friending error
+
 
 
 
