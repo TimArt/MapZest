@@ -8,4 +8,4 @@
 -- Include Table and Procedure scripts.
 \i mapzest-postgresql-db-init_tables.sql
 \i mapzest-postgresql-db-init_procedures.sql;
--- \i mapzest-postgresql-db-init_insertions.sql;
+\i mapzest-postgresql-db-init_debug_insertions.sql;
