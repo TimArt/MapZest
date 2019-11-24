@@ -18,7 +18,7 @@ CREATE DATABASE mapzest ENCODING 'UTF8';
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     email VARCHAR (345) UNIQUE NOT NULL, -- Unique is automatically indexed
-    password VARCHAR (255) NOT NULL, -- Salt + Hash of user's password
+    password BYTEA NOT NULL, -- Salt + Hash of user's password
     -- User must verify their email before using their account
     -- This is NULL when the user is not verified and a timestamp when they are
     email_verification_code BYTEA NOT NULL, -- 64 Bytes

@@ -4,10 +4,8 @@ from lib.Response import Response
 from lib.Auth import Auth
 from lib.View import View
 from lib.config import *
-from lib.Debug import Debug
 import psycopg2  # Postgres Connection
 import secrets
-
 
 class LoginController:
     """
@@ -57,8 +55,9 @@ class LoginController:
                     curs.execute ("CALL create_user (%s, %s, %s)",
                                   (email, password_hash, email_verification_token_bytes))
                     # TODO: SEND VERIFICATION EMAIL HERE
-                except psycopg2.Error as e:
-                    Debug.print (str(e))
+                except psycopg2.Error:
+                    # Debug.print (str(e))
+                    pass  # Continue regardless of signup error
 
         # Regardless of actual user creation, we always report the same page so nobody can tell
         # what emails have accounts.

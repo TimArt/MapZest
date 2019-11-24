@@ -4,6 +4,7 @@ from lib.Middleware import Middleware
 from lib.Response import Response
 from lib.Cookies import Cookies
 from lib.User import User
+from lib.Debug import Debug
 from lib.config import *
 import secrets
 import base64
@@ -65,21 +66,18 @@ class Auth (Middleware):
         # Connect to DB in a singular transaction
         with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
             with conn.cursor() as curs:
-
-                # FROM DB GET PASSWORD SALT+HASH COMBO (could be in a single column called hash)
-                # FROM the USER with user_email
-                # as variable : db_hash_bytes
-
-                # if not Auth.verify_password_hash (user_password, db_hash_bytes):
-                #   return False # This is legal in a 'with' context
-
-                # Generate authentication token
-                auth_token_bytes = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
-                auth_token_string = base64.b64encode (auth_token_bytes).decode (ENCODING)
-
-                # Store auth token in DB
                 try:
-                    curs.execute ("CALL create_user_auth_token (%s, %s)",
+                    curs.execute ("SELECT password FROM users WHERE email = %s", (user_email,))
+                    db_password_hash = curs.fetchone()[0].tobytes()
+
+                    if not Auth.verify_password_hash (user_password, db_password_hash):
+                        return False
+
+                    # Generate authentication token
+                    auth_token_bytes = secrets.token_bytes (SECURE_TOKEN_NUM_BYTES)
+                    auth_token_string = base64.b64encode (auth_token_bytes).decode (ENCODING)
+
+                    curs.execute ("CALL set_user_auth_token (%s, %s)",
                                   (user_email, auth_token_bytes))
 
                     # Store user data in cookies
@@ -88,17 +86,23 @@ class Auth (Middleware):
 
                     login_attempt_success = True
 
-                except psycopg2.Error:
+                except psycopg2.Error as e:
                     pass
 
-        # ? conn.close()  # Sucks but the docs say you have to do this
+        # ? conn.close()  # Sucks but the docs say you have to do this??
 
         return login_attempt_success
 
 
     @staticmethod
     def hash_password (password_str):
+        """
+        Expects a str password and returns a hashed byte string.
+        """
         assert (isinstance (password_str, str))
+
+        if len (password_str) > MAX_PASSWORD_STR_LENGTH:
+            password_str = password_str[:MAX_PASSWORD_STR_LENGTH]
 
         salt = os.urandom (HASH_SALT_NUM_BYTES)
         key = hashlib.pbkdf2_hmac (HASH_ALGORITHM,
@@ -110,14 +114,21 @@ class Auth (Middleware):
 
     @staticmethod
     def verify_password_hash (password_to_verify_str, true_hash_bytes):
+        """
+        Verifies that a str password hashes to a byte string.
+        """
         assert (isinstance (password_to_verify_str, str))
         assert (isinstance (true_hash_bytes, bytes))
 
-        true_hash_salt = true_hash[:HASH_SALT_NUM_BYTES]
-        true_hash_key = true_hash[HASH_SALT_NUM_BYTES:]
+        if len (password_to_verify_str) > MAX_PASSWORD_STR_LENGTH:
+            password_to_verify_str = password_to_verify_str[:MAX_PASSWORD_STR_LENGTH]
+
+
+        true_hash_salt = true_hash_bytes[:HASH_SALT_NUM_BYTES]
+        true_hash_key = true_hash_bytes[HASH_SALT_NUM_BYTES:]
 
         key_to_verify = hashlib.pbkdf2_hmac (HASH_ALGORITHM,
-                                             password_to_verify.encode (encoding=ENCODING),
+                                             password_to_verify_str.encode (encoding=ENCODING),
                                              true_hash_salt,
                                              HASH_ITERATIONS)
 
