@@ -135,8 +135,9 @@ RETURNS TABLE (
 LANGUAGE SQL
 AS $$
 
-    SELECT u.user_id, u.email, l.latitude, l.longitude FROM users AS u
-        NATURAL JOIN
+    SELECT u.user_id, u.email, COALESCE (l.latitude, 0.0),
+        COALESCE (l.longitude, 0.0) FROM users AS u
+        JOIN
         (
             -- All friends where this user is user_1_id
             (SELECT user_2_id AS user_id FROM friends
@@ -150,7 +151,8 @@ AS $$
                 AND user_1_status = 'accepted'
                 AND user_2_status = 'accepted')
         ) AS f
-        JOIN locations AS l ON u.user_id = l.user_id;
+        ON u.user_id = f.user_id
+        LEFT JOIN locations AS l ON u.user_id = l.user_id;
 $$;
 
 
@@ -242,7 +244,7 @@ CREATE OR REPLACE PROCEDURE set_user_friend_status
 LANGUAGE SQL
 AS $$
     -- If row already exists, update it
-    INSERT INTO friends (user_1_id, user_2_id, user_1_status, user_2_status, updated_at)
+    INSERT INTO friends AS f (user_1_id, user_2_id, user_1_status, user_2_status, updated_at)
         VALUES (LEAST (get_user_id (p_this_user_email), get_user_id (p_other_user_email)),
                 GREATEST (get_user_id (p_this_user_email), get_user_id (p_other_user_email)),
 
@@ -295,11 +297,12 @@ AS $$
             updated_at = CURRENT_TIMESTAMP
 
             WHERE
-            get_user_id (p_this_user_email)
-                = LEAST (get_user_id (p_this_user_email), get_user_id (p_other_user_email))
-            AND
-            get_user_id (p_other_user_email)
-                = GREATEST (get_user_id (p_this_user_email), get_user_id (p_other_user_email));
+            (f.user_1_id = get_user_id (p_this_user_email) AND
+             f.user_2_id = get_user_id (p_other_user_email))
+            OR
+            (f.user_1_id = get_user_id (p_other_user_email) AND
+             f.user_2_id = get_user_id (p_this_user_email))
+            ;
 $$;
 
 

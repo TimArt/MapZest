@@ -71,7 +71,7 @@ CALL set_user_friend_status ('omg@omg', 'lit@lit', 'accepted');
 -- reply to friend requests . . .
 CALL set_user_friend_status ('jam@jam', 'tim@tim', 'accepted');
 CALL set_user_friend_status ('lit@lit', 'tim@tim', 'rejected');
-CALL set_user_friend_status ('mc@mc', 'tim@tim' 'accepted');
+CALL set_user_friend_status ('mc@mc', 'tim@tim', 'accepted');
 CALL set_user_friend_status ('mc@mc', 'tim@tim', 'rejected');
 CALL set_user_friend_status ('mc@mc', 'tim@tim', 'rejected');
 CALL set_user_friend_status ('lit@lit', 'kk@kk', 'accepted');
