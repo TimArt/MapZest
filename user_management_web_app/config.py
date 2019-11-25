@@ -3,4 +3,4 @@
 """
 A set of user level configs for the app.
 """
-CONF_DEBUG = True
+CONF_DEBUG = False

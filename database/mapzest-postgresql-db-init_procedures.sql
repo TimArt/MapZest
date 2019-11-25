@@ -205,25 +205,25 @@ RETURNS TABLE (
 )
 LANGUAGE SQL
 AS $$
-
-    SELECT u.user_id, u.email FROM users AS u NATURAL JOIN
+    -- Grab all possible user_ids which DO NOT have relationships with
+    -- this user.
+    SELECT u.user_id, u.email FROM users AS u LEFT JOIN
     (
-        -- Grab all possible user_ids which are not this user except the ones
-        -- the user is already friends with
-        SELECT user_id FROM users WHERE email != p_email AND NOT EXISTS
-            (
-                (SELECT user_1_id AS user_id FROM friends WHERE user_1_id = get_user_id (p_email)
-                    OR user_2_id = get_user_id (p_email))
-                UNION
-                (SELECT user_2_id AS user_id FROM friends WHERE user_1_id = get_user_id (p_email)
-                    OR user_2_id = get_user_id (p_email))
-            )
-    ) AS pf
+        -- Get a list of user ids of people we have realtionships with
+        (SELECT user_1_id AS user_id FROM friends WHERE user_1_id = get_user_id (p_email)
+            OR user_2_id = get_user_id (p_email))
+        UNION
+        (SELECT user_2_id AS user_id FROM friends WHERE user_1_id = get_user_id (p_email)
+            OR user_2_id = get_user_id (p_email))
+    ) AS fq
+    ON fq.user_id = u.user_id
+    -- Choose the user_ids which are not associated with our relationships
+    WHERE fq.user_id IS NULL AND u.user_id != get_user_id (p_email)
     -- Ensure the following user actually exists and don't return
     -- data if that user doesn't exist
-    WHERE EXISTS (SELECT user_id FROM users WHERE email = p_email)
+    AND EXISTS (SELECT user_id FROM users WHERE email = p_email)
     ORDER BY random()
-    LIMIT 10;
+    LIMIT 5;
 $$;
 
 
