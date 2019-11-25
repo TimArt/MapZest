@@ -82,7 +82,6 @@ short checkSignInToken(char* token){
   strcat(queryString, token);
   strcat(queryString, "';");
   //SQL GETUID->GetLocation
-  printf("CHECK %s\n", queryString);
   PGresult *res = PQexec(conn, queryString);
   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
     printf("No data retrieved\n");
@@ -93,15 +92,25 @@ short checkSignInToken(char* token){
   return 1;
 }
 
-char* getMyLocation(char* token){
-  char* ReturnMessage = malloc(11);
-  memset(&ReturnMessage[0], 0, sizeof(ReturnMessage));
+char* getMyLocation(char* token1){
+  char* ReturnMessage = (char*)malloc(200);
+  memset(&ReturnMessage[0], 0, 200);
+
+ char token[65];
+  for(int x = 0; x < 64; x++){
+    token[x] = *(token1);
+    token1++;
+  }
+  token[64] = '\0';
+
+
   if(checkSignInToken(token) == 0){
     ReturnMessage[0]=0;
     return ReturnMessage;
   }
-  char* queryString = (char*)malloc(200);
-  memset(&queryString[0], 0, sizeof(queryString));
+  printf("Bfore query");
+  char* queryString = (char*)malloc(300);
+  memset(&queryString[0], 0, 300);
   strcat(queryString, "select latitude, longitude from locations where user_id IN (Select user_id from user_auth_tokens where auth_token=E'\\\\");
   strcat(queryString, token);
   strcat(queryString, "');");
@@ -114,6 +123,8 @@ char* getMyLocation(char* token){
     ReturnMessage[0]=0;
     return ReturnMessage;
   }
+  free(queryString);
+  printf("RIGHT BEFORE SETTING RETURNMESSAGE");
   ReturnMessage[0]=1;
   char* lat = PQgetvalue(res,0,0);
   char* lon = PQgetvalue(res,0,1);
@@ -335,15 +346,10 @@ memset(&buffer[0], 0, sizeof(buffer));
       //buffer = signIn(message);
       int writetemp = write(newSocket, buffer, strlen(buffer)*sizeof(char));
     }else if(testChar == '1'){
-      char* justToken = malloc(64);
-      int tempx;
-      for(tempx = 0; tempx < 64; tempx++){
-        justToken[tempx] = buffer[tempx+1];
-      }
+      char* justToken = buffer+1;
       strcpy(buffer, getMyLocation(justToken));
       //buffer = getMyLocation(justToken);
       write(newSocket, buffer, sizeof(char)*strlen(buffer));
-      free(justToken);
     }else if(testChar == '2'){
       buffer[0] = updateMyLocation(message);
       buffer[1] = '[';
