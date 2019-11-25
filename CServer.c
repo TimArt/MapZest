@@ -160,6 +160,7 @@ char updateMyLocation(char* message){
     token[x] = message[x];
   }
   token[64] = '\0';
+  printf("BEFORECHECKTOKEN");
   if(checkSignInToken(token) == 0){
     return ReturnMessage;
   }
@@ -356,7 +357,6 @@ memset(&buffer[0], 0, sizeof(buffer));
       //buffer = updateMyLocation(message);
       send(newSocket, buffer, strlen(buffer), 0);
     }else if(testChar == '3'){
-	    printf("3 thing%s\n", buffer);
       strcpy(buffer, findMyFriendLocation(message));
       //buffer = findMyFriendLocation(message);
       send(newSocket, buffer, strlen(buffer), 0);
