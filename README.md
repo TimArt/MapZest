@@ -1,6 +1,10 @@
 # MapZest
 Source code for MapZest system.
 
+## Python Setup
+We used the **mod_wsgi** interface to communicate with Apache. To setup Python,
+Apache, and mod_wsgi, [see the setup documentsion](https://modwsgi.readthedocs.io/en/develop/user-guides/quick-installation-guide.html).
+
 ## Database Setup
 _Requires PostgreSQL 11 or Higher_
 
