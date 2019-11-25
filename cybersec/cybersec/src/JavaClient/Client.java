@@ -62,7 +62,7 @@ public class Client {
 		String latitude = String.valueOf(lat).substring(0,4);
                 System.out.print("\nLongitude: ");
 		Float lon = in.nextFloat();
-                String longitude = String.valueOf(lat).substring(0,4);
+                String longitude = String.valueOf(lon).substring(0,4);
                 byte[] updateMessage = new byte[72];
                 updateMessage[0] = '2';
                 byte[] tokenBytes = token.getBytes();
