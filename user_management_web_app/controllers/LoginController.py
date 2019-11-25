@@ -7,6 +7,7 @@ from lib.config import *
 import psycopg2  # Postgres Connection
 import secrets
 
+
 class LoginController:
     """
     Handles login page routes and functionality.
@@ -43,7 +44,7 @@ class LoginController:
         if password is None or email is None:
             return Response.okDisplay ("Bad Parameters Sent!")
 
-        if len (password) <= 8:
+        if len (password) < MIN_PASSWORD_STR_LENGTH:
             return Response.okDisplay (View ('views/signup-error-password.html').get())
 
         password_hash = Auth.hash_password (password)

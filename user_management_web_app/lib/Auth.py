@@ -67,8 +67,13 @@ class Auth (Middleware):
         with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
             with conn.cursor() as curs:
                 try:
-                    curs.execute ("SELECT password FROM users WHERE email = %s", (user_email,))
-                    db_password_hash = curs.fetchone()[0].tobytes()
+                    curs.execute ("SELECT get_user_password_hash (%s)", (user_email,))
+                    db_password_hash = curs.fetchone()
+
+                    if db_password_hash is None or db_password_hash[0] is None:
+                        return False
+
+                    db_password_hash = db_password_hash[0].tobytes()
 
                     if not Auth.verify_password_hash (user_password, db_password_hash):
                         return False

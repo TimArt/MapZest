@@ -1,11 +1,13 @@
 --  ============================================================================
 --  MapZest PostgreSQL Database Initialization
 --
---  Runs MySQL scripts for database creation, procedure creation, and any
---  default insertions.
+--  Runs PostgreSQL scripts for database creation and procedure/function setup.
+--
+--  Requiurements:
+--      - PostgreSQL 11 or Higher
 --  ============================================================================
 
 -- Include Table and Procedure scripts.
-\i mapzest-postgresql-db-init_tables.sql
+\i mapzest-postgresql-db-init_tables.sql;
 \i mapzest-postgresql-db-init_procedures.sql;
-\i mapzest-postgresql-db-init_debug_insertions.sql;
+--\i mapzest-postgresql-db-init_debug_insertions.sql;
