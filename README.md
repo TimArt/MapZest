@@ -62,7 +62,7 @@ CALL the_procedure_identifier (param_1, param_2, param_3);
 3. To call a stored **function** marked as `FUNCTION` in the source code, run the
 following in SQL:
 ```sql
-SELECT the_function_identifier (param_1, param_2, param_3);
+SELECT * FROM the_function_identifier (param_1, param_2, param_3);
 ```
 
 In summary, stored procedures are generally used for inserting or updating new

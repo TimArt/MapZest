@@ -37,7 +37,7 @@ class FriendController:
         made by one user for another user.
         """
         this_user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
-        related_user_email = request.get ('friend_email', [''])[0]
+        related_user_email = request.get ('user_email', [''])[0]
         this_user_status = 'accepted'
 
         FriendController.update_friend_status (this_user_email, related_user_email, this_user_status)
@@ -52,7 +52,7 @@ class FriendController:
         made by one user for another user.
         """
         this_user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
-        related_user_email = request.get ('friend_email', [''])[0]
+        related_user_email = request.get ('user_email', [''])[0]
         this_user_status = 'rejected'
 
         FriendController.update_friend_status (this_user_email, related_user_email, this_user_status)
