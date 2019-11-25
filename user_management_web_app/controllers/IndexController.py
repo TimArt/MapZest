@@ -15,9 +15,9 @@ class IndexController:
     """
 
     @staticmethod
-    def get (request):
+    def get (request, cookies):
 
-        user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
+        user_email = cookies.get (User.EMAIL_COOKIE_KEY)
         friend_requests = []
         friend_list = {}
         potential_friend_list = []

@@ -2,34 +2,38 @@
 
 from http import cookies
 
+HTTP_COOKIE_HEADER = 'Set-Cookie'
+
 class Cookies:
     """
-    A global singleton class allowing for getting and setting cookies. Every
-    HTTP request should call init_session_cookies to grab the currently
+    An object allowing for getting and setting cookies. Every HTTP request will
+    be paired with should call init_session_cookies to grab the currently
     available cookies and every HTTP reply should send any cookies added to this
     singleton class.
     """
-    cookies_kv = cookies.SimpleCookie() # Initialized at app startup
 
-    @classmethod
-    def init (cls, environ):
-        cls.cookies_kv.load (environ.get ('HTTP_COOKIE', ''))
+    def __init__ (self, environ):
+        self.cookies_kv = cookies.SimpleCookie()
+        self.cookies_kv.load (environ.get ('HTTP_COOKIE', ''))
+        self.has_cookie_changed = False
 
-    @classmethod
-    def get (cls, cookie_key):
+
+    def get (self, cookie_key):
         """
         @return string cookie value for key or empty string if key not found
         """
-        morsel = cls.cookies_kv.get (cookie_key)
+        morsel = self.cookies_kv.get (cookie_key)
         return "" if morsel is None else morsel.value
 
-    @classmethod
-    def set (cls, key, value):
+
+    def set (self, key, value):
         """
         Sets a cookie key and value.
         """
-        cls.cookies_kv[key] = value
+        if self.cookies_kv.get(key) is None or value != self.cookies_kv[key]:
+            self.has_cookie_changed = True
+            self.cookies_kv[key] = value
 
-    @classmethod
-    def getAll (cls):
-        return cls.cookies_kv
+
+    def getAll (self):
+        return [(HTTP_COOKIE_HEADER, item.strip()) for item in self.cookies_kv.output(header='').splitlines()]

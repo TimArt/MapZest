@@ -31,12 +31,12 @@ class FriendController:
     """
 
     @staticmethod
-    def post_add_friend (request):
+    def post_add_friend (request, cookies):
         """
         Adds a friend or accepts a friend request. A positive accept action is
         made by one user for another user.
         """
-        this_user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
+        this_user_email = cookies.get (User.EMAIL_COOKIE_KEY)
         related_user_email = request.get ('user_email', [''])[0]
         this_user_status = 'accepted'
 
@@ -46,12 +46,12 @@ class FriendController:
 
 
     @staticmethod
-    def post_remove_friend (request):
+    def post_remove_friend (request, cookies):
         """
         Removes a friend or rejects a friend request. A negative reject action is
         made by one user for another user.
         """
-        this_user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
+        this_user_email = cookies.get (User.EMAIL_COOKIE_KEY)
         related_user_email = request.get ('user_email', [''])[0]
         this_user_status = 'rejected'
 

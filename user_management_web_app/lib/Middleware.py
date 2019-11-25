@@ -8,7 +8,7 @@ class Middleware (ABC):
 
     @staticmethod
     @abstractmethod
-    def run (environ):
+    def run (environ, cookies):
         """
         Runs the middlware and either returns an HTTP Response or None if the
         middleware has no reason to stop execution of main route.

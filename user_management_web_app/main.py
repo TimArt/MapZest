@@ -33,15 +33,8 @@ def application (environ, start_response):
     @param enciron: environment variables such as request method
     @param start_response: method to output HTTP status and headers
     """
-   # Debug.reset()
-    Cookies.init (environ)
-
+    # Debug.reset()
     response = attemptRoute (environ)
-
-    # Debug Output
-    if CONF_DEBUG:
-        response.output_html = f'{response.output_html}\n\n\n{get_debug_string (environ, response)}'
-
 
     output_bytes = response.output_html.encode (encoding=ENCODING, errors='strict')
 
@@ -49,8 +42,7 @@ def application (environ, start_response):
     response_headers = [('Content-type', 'text/html'),
                         ('Content-Length', str (len (output_bytes)))]
 
-    for header in response.headers_http:
-        response_headers.append (header)
+    response_headers.extend (response.headers_http)
 
     # Send HTTP Headers
     start_response (response.status_http, response_headers)
@@ -67,6 +59,9 @@ def attemptRoute (environ):
     """
     REQUEST_METHOD = environ['REQUEST_METHOD']
     REQUEST_URI = environ['REQUEST_URI']
+    cookies = Cookies (environ)
+
+    response = None
 
     # Route request to correct page script handler
     try:
@@ -88,18 +83,53 @@ def attemptRoute (environ):
 
         # Run middleware before main route
         for middleware_cmd in middleware_cmd_list:
-            middleware_response = middleware_cmd (environ)
+            middleware_response = middleware_cmd (environ, cookies)
             if middleware_response is not None:
-                return middleware_response
+                response = middleware_response
+                break
 
-        # Return view or run controller to produce HTTP response with HTML
-        if is_view:
-            return Response.okDisplay (View (f"views/{view_file}").get())
-        else:  # Run controller file
-            return controller_cmd (parse_request (environ))
+        if response is None:
+            # Return view or run controller to produce HTTP response with HTML
+            if is_view:
+                response = Response.okDisplay (View (f"views/{view_file}").get())
+            else:  # Run controller file
+                response = controller_cmd (parse_request (environ), cookies)
 
     except UndefinedRouteError:
-        return Response.notFound404Error()
+        response = Response.notFound404Error()
+
+    finally:
+        if response is None:
+            response = Response.okDisplay ("ERROR")
+
+        if response is not None:
+            # Debug Output
+            if CONF_DEBUG:
+                response.output_html = f'{response.output_html}\n\n\n{get_debug_string (environ, cookies, response)}'
+
+            if cookies.has_cookie_changed:
+                response.headers_http.extend (cookies.getAll())
+
+            # Replace any cookies
+            # resp_cookie_index = 0
+            # for resp_header, resp_cookie in response.headers_http:
+            #     if resp_header == 'Set-Cookie':
+            #         resp_cookie_list = resp_cookie.split ('=', 1)
+            #         resp_cookie_key = resp_cookie_list[0]
+            #         resp_cookie_val = resp_cookie_list[1]
+            #         for local_cookie_morsel in cookies.cookies_kv.values():
+            #             if local_cookie_morsel.key == resp_cookie_key:
+            #                 if local_cookie_morsel.value != resp_cookie_val:
+            #                     response.headers_http[resp_cookie_index] = f'{local_cookie_morsel.key}={local_cookie_morsel.value}'
+            #     resp_cookie_index += 1
+
+
+            # # Add any new cookies to the response
+            # for cookie in cookies.getAll():
+            #     if cookie not in response.headers_http:
+            #         response.headers_http.append (cookie)
+
+        return response
 
 
 def parse_request (environ):
@@ -127,7 +157,7 @@ def parse_request (environ):
     return request_dict
 
 
-def get_debug_string (environ, response):
+def get_debug_string (environ, cookies, response):
     return (f"<h1>DEBUG</h1>\n"
             f"<h2>User Debug Printing:</h2>"
             f"{Debug.debug_string}\n"
@@ -137,6 +167,6 @@ def get_debug_string (environ, response):
             f"<li><strong>HTTP Headers:</strong> {response.headers_http}</li>\n"
             f"</ul>\n"
             f"<h2>Cookies:</h2>\n"
-            f"{Cookies.getAll()}"
+            f"{cookies.getAll()}"
             f"<h2>Environ:</h2>\n"
             f"{environ}\n")

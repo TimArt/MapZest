@@ -4,6 +4,7 @@ from lib.Response import Response
 from lib.Auth import Auth
 from lib.View import View
 from lib.config import *
+from lib.User import User
 import psycopg2  # Postgres Connection
 import secrets
 
@@ -14,20 +15,20 @@ class LoginController:
     """
 
     @staticmethod
-    def get (request):
+    def get (request, cookies):
         # If already authorized, redirect to main page
-        if Auth.is_authorized():
+        if Auth.is_authorized (cookies):
             return Response.redirect ('/')
         else:
             return Response.okDisplay (View ('views/login.html').get())
 
 
     @staticmethod
-    def post_login (request):
+    def post_login (request, cookies):
         email = request.get ('email', [''])[0]  # Returns the first email value.
         password = request.get ('password', [''])[0]
 
-        login_success = Auth.attempt_login (email, password)
+        login_success = Auth.attempt_login (email, password, cookies)
 
         # If was not logged in, make them login again
         if not login_success:
@@ -37,7 +38,7 @@ class LoginController:
 
 
     @staticmethod
-    def post_signup (request):
+    def post_signup (request, cookies):
         email = request.get ('email', [''])[0]  # Returns the first email value.
         password = request.get ('password', [''])[0]
 
@@ -63,3 +64,11 @@ class LoginController:
         # Regardless of actual user creation, we always report the same page so nobody can tell
         # what emails have accounts.
         return Response.okDisplay (View ('views/signup-success.html').get().format(user_email=email))
+
+
+    @staticmethod
+    def post_logout (request, cookies):
+        # Clear Cookies
+        cookies.set (User.EMAIL_COOKIE_KEY, '')
+        cookies.set (User.AUTH_TOKEN_COOKIE_KEY, '')
+        return Response.redirect ('/login')

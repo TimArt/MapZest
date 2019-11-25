@@ -9,9 +9,6 @@ class Response:
     """
     An HTTP Response to the client.
     """
-    status_http = ''
-    output_html = ''
-    headers_http = []
 
     def __init__ (self, status_http, output_html, headers_http=[]):
         assert (isinstance (status_http, str))
@@ -22,31 +19,31 @@ class Response:
             for item in header:
                 assert (isinstance (item, str))
 
-        self.status_http = status_http
-        self.output_html = output_html
-        self.headers_http = headers_http
+        self.status_http = status_http    # str
+        self.output_html = output_html    # str
+        self.headers_http = headers_http  # list
 
-    @classmethod
-    def okDisplay (cls, output_html):
+    @staticmethod
+    def okDisplay (output_html):
         """
         Factory method to construct a Response for an HTTP OK status page display.
         """
         assert (isinstance (output_html, str))
-        return cls (HTTP_STATUS_OK, output_html)
+        return Response (HTTP_STATUS_OK, output_html)
 
-    @classmethod
-    def redirect (cls, url_path):
+    @staticmethod
+    def redirect (url_path):
         """
         Factory method to construct a Response for a redirect.
         """
         assert (isinstance (url_path, str))
-        return cls (HTTP_STATUS_REDIRECT, "", [('Location', url_path)])
+        return Response (HTTP_STATUS_REDIRECT, "", [('Location', url_path)])
 
-    @classmethod
-    def notFound404Error (cls):
+    @staticmethod
+    def notFound404Error():
         """
         Factory method to construct a Response for a 404 error.
         """
-        return cls (HTTP_STATUS_NOT_FOUND,
-                    '<h1>404 Error : Some crap went down, so just <a href="/">HEAD HOME</a>.</h1>',
-                    [])
+        return Response (HTTP_STATUS_NOT_FOUND,
+                         '<h1>404 Error : Some crap went down, so just <a href="/">HEAD HOME</a>.</h1>',
+                         [])

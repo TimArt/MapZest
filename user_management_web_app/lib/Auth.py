@@ -17,7 +17,7 @@ class Auth (Middleware):
 
     # Override of middleware run method
     @staticmethod
-    def run (environ):
+    def run (environ, cookies):
         """
         Checks if user is authenticated. If so, returns none, otherwise redirects
         to login.
@@ -26,14 +26,14 @@ class Auth (Middleware):
         """
         # If not authrorized, redirect, otherwize do nothing, continue route
         response = Response.redirect ('/login')
-        if Auth.is_authorized():
+        if Auth.is_authorized (cookies):
             response = None
 
         return response
 
 
     @staticmethod
-    def is_authorized():
+    def is_authorized (cookies):
         """
         Checks if the user is authorized to use the website based on their stored
         login cookie and the state of the database.
@@ -41,8 +41,8 @@ class Auth (Middleware):
 
         does_valid_token_exist = False
 
-        auth_token_bytes = base64.b64decode (Cookies.get (User.AUTH_TOKEN_COOKIE_KEY).encode (ENCODING))
-        user_email = Cookies.get (User.EMAIL_COOKIE_KEY)
+        auth_token_bytes = base64.b64decode (cookies.get (User.AUTH_TOKEN_COOKIE_KEY).encode (ENCODING))
+        user_email = cookies.get (User.EMAIL_COOKIE_KEY)
 
         with psycopg2.connect (POSTGRES_DB_CONNECT) as conn:
             with conn.cursor() as curs:
@@ -55,7 +55,7 @@ class Auth (Middleware):
 
 
     @staticmethod
-    def attempt_login (user_email, user_password):
+    def attempt_login (user_email, user_password, cookies):
         """
         Attempts a user login.
 
@@ -86,12 +86,12 @@ class Auth (Middleware):
                                   (user_email, auth_token_bytes))
 
                     # Store user data in cookies
-                    Cookies.set (User.EMAIL_COOKIE_KEY, user_email)
-                    Cookies.set (User.AUTH_TOKEN_COOKIE_KEY, auth_token_string)
+                    cookies.set (User.EMAIL_COOKIE_KEY, user_email)
+                    cookies.set (User.AUTH_TOKEN_COOKIE_KEY, auth_token_string)
 
                     login_attempt_success = True
 
-                except psycopg2.Error as e:
+                except psycopg2.Error:
                     pass
 
         # ? conn.close()  # Sucks but the docs say you have to do this??
