@@ -70,4 +70,50 @@ information into the database, while stored functions are generally used for
 getting data from the database. Make sure to use the correct syntax between the
 two above for either a procedure or a function.
 
+#### Setting Up Test Data
+If you need to insert test data, one easy way to do this is with a SQL script
+which calls the stored procedures/functions needed to setup the state you want.
+
+1. Make a new SQL file in the `database` directory called `mapzest-postgresql-db-init_debug_insertions_X.sql` where `X` is replaced with the
+next number in the sequence of the files present in this directory.
+
+2. Write out the stored procedures you want to call in the order you want to call
+them. See `mapzest-postgresql-db-init_debug_insertions_1.sql` as an example of
+some test data you could make.
+
+3. Run the script to execute your test execution and add new content to the DB:
+```bash
+\i mapzest-postgresql-db-init_debug_insertions_X.sql
+```
+
+Here's a quick example which you could use to add a few users, make some friend
+connections, and update locations:
+```sql
+-- Connect to MapZest DB
+\c mapzest
+
+-- Inserts users with dummy passwords. If you need to test hashing, this will
+-- NOT work and you will need to use the python script for this.
+CALL create_user ('tim@tim.com', 'abc', 'abc');
+CALL create_user ('jeff@jeff.com', 'abc', 'abc');
+CALL create_user ('maddie@maddie.com', 'abc', 'abc');
+CALL create_user ('josh@josh.com', 'abc', 'abc');
+
+-- Make users friends
+CALL set_user_friend_status ('tim@tim.com', 'jeff@jeff.com', 'accepted');
+CALL set_user_friend_status ('jeff@jeff.com', 'tim@tim.com', 'accepted');
+
+CALL set_user_friend_status ('tim@tim.com', 'maddie@maddie.com', 'accepted');
+CALL set_user_friend_status ('maddie@maddie.com', 'tim@tim.com', 'accepted');
+
+CALL set_user_friend_status ('tim@tim.com', 'josh@josh.com', 'accepted');
+CALL set_user_friend_status ('josh@josh.com', 'tim@tim.com', 'accepted');
+
+-- Set some locations
+CALL set_user_active_location ('tim@tim.com', 38.43, 483.24);
+CALL set_user_active_location ('jeff@jeff.com', 23.2343, 24.24);
+CALL set_user_active_location ('maddie@maddie.com', 54.43, 29.24);
+CALL set_user_active_location ('josh@josh.com', 3.43, 462.43);
+```
+
 
