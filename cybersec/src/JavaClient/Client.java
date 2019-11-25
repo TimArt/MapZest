@@ -1,5 +1,6 @@
 package JavaClient;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
@@ -18,7 +19,7 @@ public class Client {
         Socket s;
         try {
             // Set up connection and (de)framer
-            s = TLSFactory.getClientSocket("172.22.1.1", 6861);
+            s = new Socket("172.22.1.234", 6861);
         } catch (UnknownHostException e) {
             System.err.println("Error Connecting To Server");
             return;
@@ -38,80 +39,95 @@ public class Client {
             case 's':
                 System.out.print("LOGIN\nUsername: ");
                 String username = in.nextLine();
-                System.out.print("\nPassword: ");
+                System.out.print("Password: ");
                 String password = in.nextLine();
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                byte[] encodedhash = digest.digest(
-                  password.getBytes(StandardCharsets.US_ASCII));
-                byte[] message = new byte[username.length() + 66];
-                message[0] = 0;
+                byte[] message = new byte[username.length() + password.length() + 3];
+                message[0] = '0';
                 byte[] userBytes = username.getBytes();
                 for(int x = 1; x < username.length()+1; x++) {
                     message[x] = userBytes[x-1];
                 }
-                message[username.length()+1] = '\0';
+                message[username.length()+1] = '0';
                 int counter = 0;
-                for(int x = username.length()+2; x < message.length; x++) {
-                    message[x] = encodedhash[counter];
+                for(int x = username.length()+2; x < message.length-1; x++) {
+                    message[x] = password.getBytes()[counter];
+		    counter++;
                 }
+		message[username.length() + password.length() + 2] = '\0';
                 ScannerOut.write(message);
                 break;
             case 'u':
                 System.out.print("UPDATE\nLatitude: ");
-                Float latitude = in.nextFloat();
+                Float lat = in.nextFloat();
+		String latitude = String.valueOf(lat).substring(0,4);
                 System.out.print("\nLongitude: ");
-                Float longitude = in.nextFloat();
+		Float lon = in.nextFloat();
+                String longitude = String.valueOf(lat).substring(0,4);
                 byte[] updateMessage = new byte[72];
-                updateMessage[0] = 2;
+                updateMessage[0] = '2';
                 byte[] tokenBytes = token.getBytes();
                 for(int x = 1; x < 65; x++) {
                     updateMessage[x] = tokenBytes[x-1];
                 }
-                byte[] latbytes = latitude.toHexString(latitude).getBytes();
                 int updateCounter = 0;
+		byte[] latbytes = latitude.getBytes();
                 for(int x = 65; x < 69; x++) {
                     updateMessage[x] = latbytes[updateCounter];
                     updateCounter++;
                 }
-                byte[] longbytes = longitude.toHexString(longitude).getBytes();
+                byte[] longbytes = longitude.getBytes();
                 updateCounter = 0;
                 for(int x = 69; x < 72; x++) {
-                    updateMessage[x] = latbytes[updateCounter];
+                    updateMessage[x] = longbytes[updateCounter];
                     updateCounter++;
                 }
                 ScannerOut.write(updateMessage);
                 break;
             case 'g':
                 System.out.println("Getting your location ");
-                byte[] getMessage = new byte[65];
-                getMessage[0] = 1;
-                byte[] tokenBytes1 = token.getBytes();
+                byte[] getMessage = new byte[token.getBytes().length +2];
+		byte[] tokenBytes1 = token.getBytes();
+		getMessage[0] = '1';
                 for(int x = 1; x < 65; x++) {
                     getMessage[x] = tokenBytes1[x-1];
                 }
+		getMessage[token.getBytes().length+1] = '\0';
                 ScannerOut.write(getMessage);
                 break;
             case 'f':
-                System.out.println("Getting Friend's Username");
+                System.out.println("Getting Friend's Location");
                 System.out.print("Friend's Username: ");
                 String friendu = in.nextLine();
-                byte[] friendMessage = new byte[66 + friendu.length()];
-                friendMessage[0] = 1;
+                byte[] friendMessage = new byte[67 + friendu.length()];
+                friendMessage[0] = '3';
                 byte[] tokenBytes2 = token.getBytes();
                 for(int x = 1; x < 65; x++) {
                     friendMessage[x] = tokenBytes2[x-1];
                 }
                 byte[] friendbytes = friendu.getBytes();
-                for(int x = 65; x < friendMessage.length-1; x++) {
-                    friendMessage[x] = friendbytes[x-1];
+                for(int x = 65; x < friendMessage.length-2; x++) {
+                    friendMessage[x] = friendbytes[x-65];
                 }
-                friendMessage[65 + friendu.length()] = '\0';
-                ScannerOut.write(friendMessage);
+                friendMessage[65 + friendu.length()] = '0';
+		friendMessage[66 + friendu.length()] = '\0';
+		ScannerOut.write(friendMessage);
+		
                 break;
             default:
                 System.err.println("Bad User Input");
             }
-            byte[] response = ScannerIn.readAllBytes();
+	    int c;
+	    byte[] b = {0};
+	    boolean notFound = true;
+	    ByteArrayOutputStream output = new ByteArrayOutputStream();
+	    while(notFound && (c = ScannerIn.read(b)) != -1){
+		output.write(b);
+		char bleh = (char)b[0];
+		if(bleh == '['){
+		   notFound = false;
+		}
+	    }
+            byte[] response = output.toByteArray();
             if(response[0] == 0) {
                 System.err.println("Error With Data You Sent");
             }else {
@@ -119,7 +135,10 @@ public class Client {
                 case 's':
                     System.out.println("Successful Login");
                     byte[] tok = Arrays.copyOfRange(response, 1, response.length);
-                    token = Arrays.toString(tok);
+		    token = "";
+		    for(int x = 0; x < tok.length; x++){
+			token += Character.getNumericValue(tok[x]);
+		    }
                     input = getInput();
                     break;
                 case 'u':
@@ -127,25 +146,51 @@ public class Client {
                     input = getInput();
                     break;
                 case 'g':
-                    byte[] lat = Arrays.copyOfRange(response, 1, 4);
-                    ByteBuffer buffer = ByteBuffer.wrap(lat);
-                    Float latitude = buffer.getFloat();
-                    byte[] lon = Arrays.copyOfRange(response, 5, 8);
-                    ByteBuffer buffer2 = ByteBuffer.wrap(lon);
-                    Float longitude = buffer2.getFloat();
-                    System.out.println("Latitude: " + latitude + "\nLongitude: " + longitude);
+                    byte[] lat = Arrays.copyOfRange(response, 1, 5);
+                    byte[] lon = Arrays.copyOfRange(response, 5, 9);
+                    System.out.print("Latitude: ");
+		    for(int x = 0; x < 4; x++){
+			    if(lat[x] == '.'){
+				    System.out.print(".");
+			    }else{
+			System.out.print(Character.getNumericValue(lat[x]));
+			    }
+		    }
+		    System.out.print("\nLongitude: ");
+
+		    for(int x = 0; x < 4; x++){
+			    if(lat[x] == '.'){
+				    System.out.print(".");
+			    }else{
+                        System.out.print(Character.getNumericValue(lon[x]));
+			    }
+                    }
+		    System.out.println("");
                     input = getInput();
                     break;
                 case 'f':
-                    byte[] lat2 = Arrays.copyOfRange(response, 1, 4);
-                    ByteBuffer buffer3 = ByteBuffer.wrap(lat2);
-                    Float latitude2 = buffer3.getFloat();
-                    byte[] lon2 = Arrays.copyOfRange(response, 5, 8);
-                    ByteBuffer buffer4 = ByteBuffer.wrap(lon2);
-                    Float longitude2 = buffer4.getFloat();
-                    System.out.println("Latitude: " + latitude2 + "\nLongitude: " + longitude2);
-                    input = getInput();
-                    break;
+                    byte[] lat2 = Arrays.copyOfRange(response, 1, 5);
+                    byte[] lon2 = Arrays.copyOfRange(response, 5, 9);
+                    System.out.print("Latitude: ");
+                    for(int x = 0; x < 4; x++){
+			    if(lat2[x] == '.'){
+				    System.out.print(".");
+			    }else{
+                        System.out.print(Character.getNumericValue(lat2[x]));
+			    }
+                    }
+                    System.out.print("\nLongitude: ");
+
+                    for(int x = 0; x < 4; x++){
+			    if(lon2[x] == '.'){
+				    System.out.print(".");
+			    }else{
+                        System.out.print(Character.getNumericValue(lon2[x]));
+			    }
+                    }
+                    System.out.println("");
+		    input = getInput();
+		    break;
                 default:
                     input = getInput();
                 }

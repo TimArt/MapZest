@@ -8,104 +8,105 @@
 #include <libpq-fe.h>
 
 #define PORT 6861
-#define ADDRESS "127.0.0.1"
+#define ADDRESS "172.22.1.234"
 
 PGconn *conn;
 
-char* signIn(char* signInBuffer){
-  char currChar = '\0';
+char* signIn(char* signInBuffer, int n){
+  char currChar = '0';
   int counter = 0;
-  char UserID[sizeof(signInBuffer)];
+  char UserID[n];
   char PassHash[32];
   //Set To Default Error Message
-  char* ReturnMessage = malloc(65);
+  char* ReturnMessage = (char*)malloc(67);
   do{
-    currChar = signInBuffer[counter];
+    char temp = *(signInBuffer);
+    currChar = temp;
     UserID[counter] = currChar;
     counter++;
-    if(sizeof(signInBuffer)-counter < 32){
-      return ReturnMessage;
-    }
-  }while(currChar != '\0');
-
+    signInBuffer++;
+  }while(currChar != '0');
+  UserID[counter-1] ='\0'; 
   int x;
   int PassCounter = 0;
-  for(x = counter; x < sizeof(signInBuffer); x++){
-    if(PassCounter ==32){
-      return ReturnMessage;
-    }
-    PassHash[PassCounter] = signInBuffer[x];
+  for(x = counter; x < n; x++){
+    PassHash[PassCounter] = *(signInBuffer);
+    signInBuffer++;
     PassCounter++;
   }
+  PassHash[PassCounter] = '\0';
 
   //SQL CALL HERE
-  char* queryString = concat("SELECT UID FROM Users WHERE email=", UserID);
-  strcat(queryString,", passhash =");
-  strcat(queryString, PassHash)
+  char* queryString = (char*)malloc(n + 40);
+  strcat(queryString, "SELECT * FROM get_user_password_hash ('");
+  strcat(queryString, UserID);
+  strcat(queryString,"');");
+  printf("Query:\n%s\n",queryString);
   //SQL GETUID->GetLocation
   PGresult *res = PQexec(conn, queryString);
   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
     printf("No data retrieved\n");
     PQclear(res);
-    ReturnMessage[0]=0;
+    ReturnMessage[0]='0';
     return ReturnMessage;
   }
 
-  ReturnMessage[0]=1;
-  char* userID = PQgetvalue(res, 0, 0));
+  ReturnMessage[0]='1';
   PQclear(res);
-  char newToken[64];
+  char newToken[65];
   for(x = 0; x < 64; x++){
-    newToken[x] = (char)(rand() % 10);
+    newToken[x] = (char)(rand() % 10 + 48);
+    ReturnMessage[x+1] = newToken[x];
   }
-
-  char* queryString = concat("UPDATE Tokens SET Timestamp = ", timestamp);
-  strcat(queryString, ", expires = ");
-  strcat(queryString, expiretime);
-  strcat(queryString, ", tokenCode = ");
-  strcat(queryString, newToken);
-  strcat(queryString, "WHERE UID = ");
-  strcat(queryString, userID);
+  newToken[64] = '\0';
+  ReturnMessage[65] = '[';
+  ReturnMessage[66] = '\0';
+  char *queryString2 = (char*)malloc(64+100); 
+  memset(&queryString2[0], 0, sizeof(queryString2));
+  strcat(queryString2, "CALL set_user_auth_token ('");
+  strcat(queryString2, UserID);
+  strcat(queryString2, "',E'\\\\");
+  strcat(queryString2, newToken);
+  strcat(queryString2, "');");
   //SQL GETUID->GetLocation
-  PGresult *res = PQexec(conn, queryString);
-  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-    printf("No data retrieved\n");
-    PQclear(res);
-    ReturnMessage = 0;
-    return ReturnMessage;
-  }
-
+  res = PQexec(conn, queryString2);
   return ReturnMessage;
 }
 
 short checkSignInToken(char* token){
   short returnBool = 0;
-
   //SQL CHECK Token
-  char* queryString = concat("SELECT * FROM Users WHERE token=", token);
+  char* queryString = (char*)malloc(120);
+  memset(&queryString[0], 0, sizeof(queryString));
+  strcat(queryString, "SELECT user_id FROM user_auth_tokens WHERE auth_token=E'\\\\");
+  strcat(queryString, token);
+  strcat(queryString, "';");
   //SQL GETUID->GetLocation
+  printf("CHECK %s\n", queryString);
   PGresult *res = PQexec(conn, queryString);
   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
     printf("No data retrieved\n");
     PQclear(res);
     return 0;
   }
-  returnBool = PQntuples(const PGresult *res);
   PQclear(res);
-  return returnBool;
+  return 1;
 }
 
 char* getMyLocation(char* token){
-
-  char* ReturnMessage = malloc(9);
-
+  char* ReturnMessage = malloc(11);
+  memset(&ReturnMessage[0], 0, sizeof(ReturnMessage));
   if(checkSignInToken(token) == 0){
     ReturnMessage[0]=0;
     return ReturnMessage;
   }
-
-  char* queryString = concat("SELECT latitude, longitude FROM Users WHERE token=", token);
+  char* queryString = (char*)malloc(200);
+  memset(&queryString[0], 0, sizeof(queryString));
+  strcat(queryString, "select latitude, longitude from locations where user_id IN (Select user_id from user_auth_tokens where auth_token=E'\\\\");
+  strcat(queryString, token);
+  strcat(queryString, "');");
   //SQL GETUID->GetLocation
+
   PGresult *res = PQexec(conn, queryString);
   if (PQresultStatus(res) != PGRES_TUPLES_OK) {
     printf("No data retrieved\n");
@@ -113,92 +114,178 @@ char* getMyLocation(char* token){
     ReturnMessage[0]=0;
     return ReturnMessage;
   }
-
   ReturnMessage[0]=1;
-  strcat(ReturnMessage, PQgetvalue(res, 0, 0));
-  strcat(ReturnMessage, PQgetvalue(res, 0, 1));
-  PQclear(res);
+  char* lat = PQgetvalue(res,0,0);
+  char* lon = PQgetvalue(res,0,1);
+  ReturnMessage[1] = *(lat);
+  lat++;
+  ReturnMessage[2] = *(lat);
+  lat++;
+  ReturnMessage[3] = *(lat);
+  lat++;
+  ReturnMessage[4] = *(lat);
+  lat++;
+  ReturnMessage[5] = *(lon);
+  lon++;
+  ReturnMessage[6] = *(lon);
+  lon++;
+ReturnMessage[7] = *(lon);
+  lon++;
+ReturnMessage[8] = *(lon);
+  lon++;
+  ReturnMessage[9] = '[';
+  ReturnMessage[10] = '\0';
   return ReturnMessage;
 }
 
 char updateMyLocation(char* message){
+	
   int x;
-  char token[64];
-  char latitude[4];
-  char longitude[4];
+  char token[65];
+  char latitude[5];
+  char longitude[5];
   char ReturnMessage = 0;
   for(x = 0; x < 64; x++){
     token[x] = message[x];
   }
+  token[64] = '\0';
   if(checkSignInToken(token) == 0){
     return ReturnMessage;
   }
-  for(x = 0; x < 4; x++){
+char* queryString2 = (char*)malloc(300);	
+    memset(&queryString2[0], 0, sizeof(queryString2));
+
+strcat(queryString2, "select email from users where user_id IN (Select user_id from user_auth_tokens where auth_token=E'\\\\");
+  strcat(queryString2, token);
+  strcat(queryString2, "');");
+  //SQL GETUID->GetLocation
+
+  PGresult *res1 = PQexec(conn, queryString2);
+  if (PQresultStatus(res1) != PGRES_TUPLES_OK) {
+    printf("No data retrieved\n");
+    PQclear(res1);
+    return ReturnMessage;
+  }
+  
+  char* email = PQgetvalue(res1,0,0);
+
+  for(int x = 0; x < 4; x++){
     latitude[x] = message[x+64];
     longitude[x] = message[x+68];
   }
+  latitude[4] = '\0';
+  longitude[4] = '\0';
 
-  char* queryString = concat("UPDATE Users SET latitude = ", latitude);
-  strcat(queryString, ", longitude = ");
+  char* queryString = (char*)malloc(200);
+  memset(&queryString[0], 0, sizeof(queryString));
+
+
+  strcat(queryString, "CALL set_user_active_location('");
+  strcat(queryString, email);
+  strcat(queryString, "',");
+  strcat(queryString, latitude);
+  strcat(queryString, ",");
   strcat(queryString, longitude);
-  strcat(queryString, "WHERE token = ");
-  strcat(queryString, token);
+  strcat(queryString, ");");
+  printf("QUERY FOR UPDATE \n%s\n", queryString);
   //SQL GETUID->GetLocation
   PGresult *res = PQexec(conn, queryString);
-  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-    printf("No data retrieved\n");
-    PQclear(res);
-    ReturnMessage = 0;
-    return ReturnMessage;
-  }
-
-  ReturnMessage =1;
-  PQclear(res);
+  ReturnMessage = 1;
   return ReturnMessage;
 }
 
 char* findMyFriendLocation(char* message){
-  int x;
-  char token[64];
-  char* ReturnMessage = malloc(9);
+ int x;
+  char token[65];
+    char* ReturnMessage = (char*)malloc(11);
+  memset(&ReturnMessage[0], 0, sizeof(ReturnMessage));
+
   for(x = 0; x < 64; x++){
     token[x] = message[x];
   }
-
+  token[64] = '\0';
   if(checkSignInToken(token) == 0){
     return ReturnMessage;
   }
+char* queryString2 = (char*)malloc(300);
+    memset(&queryString2[0], 0, sizeof(queryString2));
 
-  char currChar = '\0';
+strcat(queryString2, "select email from users where user_id IN (Select user_id from user_auth_tokens where auth_token=E'\\\\");
+  strcat(queryString2, token);
+  strcat(queryString2, "');");
+  //SQL GETUID->GetLocation
+
+  PGresult *res1 = PQexec(conn, queryString2);
+  if (PQresultStatus(res1) != PGRES_TUPLES_OK) {
+    printf("No data retrieved\n");
+   PQclear(res1);
+    return ReturnMessage;
+  }
+  char* email = PQgetvalue(res1,0,0);
+
+
+  char UserID[200];
+  char currChar;
+  message = message+64;
   int counter = 0;
-  char UserID[sizeof(message)];
   do{
-    currChar = message[counter];
+    char temp = *(message);
+    currChar = temp;
     UserID[counter] = currChar;
     counter++;
-  }while(currChar != '\0');
+    message++;
+  }while(currChar != '0');
 
-  //SQL Get location from UID
-  char* queryString = concat("SELECT latitude, longitude FROM Users WHERE Friend=", friend);
+  UserID[counter-1] = '\0';
 
-  PGresult *res = PQexec(conn, queryString);
-  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+  char* queryString3 = (char*)malloc(300);
+    memset(&queryString3[0], 0, sizeof(queryString3));
+
+strcat(queryString3, "select latitude, longitude from get_user_friends('");
+  strcat(queryString3, email);
+  strcat(queryString3, "') where email='");
+  strcat(queryString3, UserID);
+  strcat(queryString3,"' Limit 1;");
+  //SQL GETUID->GetLocation
+  PGresult *res2 = PQexec(conn, queryString3);
+  if (PQresultStatus(res2) != PGRES_TUPLES_OK) {
     printf("No data retrieved\n");
-    PQclear(res);
-    ReturnMessage[0]=0;
+   PQclear(res2);
+    return ReturnMessage;
+  }
+  if(PQntuples(res2) < 1){
     return ReturnMessage;
   }
 
+
   ReturnMessage[0]=1;
-  strcat(ReturnMessage, PQgetvalue(res, 0, 0));
-  strcat(ReturnMessage, PQgetvalue(res, 0, 1));
-  PQclear(res);
+  char* lat = PQgetvalue(res2,0,0);
+  char* lon = PQgetvalue(res2,0,1);
+  ReturnMessage[1] = *(lat);
+  lat++;
+  ReturnMessage[2] = *(lat);
+  lat++;
+  ReturnMessage[3] = *(lat);
+  lat++;
+  ReturnMessage[4] = *(lat);
+  lat++;
+  ReturnMessage[5] = *(lon);
+  lon++;
+  ReturnMessage[6] = *(lon);
+  lon++;
+ReturnMessage[7] = *(lon);
+  lon++;
+ReturnMessage[8] = *(lon);
+  lon++;
+  ReturnMessage[9] = '[';
+  ReturnMessage[10] = '\0';
+
   return ReturnMessage;
-  return ReturnMessage;
+
 }
 
 int connectToDatabase(){
-  conn = PQconnectdb("user=group1 password=thisisapassword dbname=projectdatabase");
+  conn = PQconnectdb("user=greg password=thisismypassword dbname=mapzest");
   if(PQstatus(conn) == CONNECTION_BAD){
     printf("Can't connect to DB");
     return 1;
@@ -222,7 +309,6 @@ int main(){
     struct sockaddr_in newAddr;
 
     socklen_t addr_size;
-    char buffer[1024];
 
     sockfd=socket(PF_INET, SOCK_STREAM, 0);
     memset(&serverAddr, '\0', sizeof(serverAddr));
@@ -232,49 +318,48 @@ int main(){
     serverAddr.sin_addr.s_addr=inet_addr(ADDRESS);
 
     bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
-  while(1){
     listen(sockfd, 5);
     addr_size = sizeof(newAddr);
-
+while(1){
     newSocket=accept(sockfd, (struct sockaddr*)&newAddr, &addr_size);
-
     //strcpy(buffer, "HELLO");
-
     //Recieve Message MAKE SURE IN JAVA TO PUT A CHAR AT THE BEGINNING
-    recv(newSocket, buffer, 1024, 0);
-    char* message = malloc(1023);
-    int tempx;
-    for(tempx = 0; tempx < sizeof(buffer)-1; tempx++){
-      message[tempx] = buffer[1+tempx];
-    }
-    if(buffer[0] == 0){
-      strcpy(buffer, signIn(message));
+  while(1){
+    char * buffer  = (char*)malloc(sizeof(char)*2048);
+memset(&buffer[0], 0, sizeof(buffer));
+    int n = read(newSocket, buffer, 2048);
+    char *message = buffer+1;
+    char testChar = *(buffer);
+    if(testChar == '0'){
+      strcpy(buffer, signIn(message, n));
       //buffer = signIn(message);
-      send(newSocket, buffer, strlen(buffer), 0);
-    }else if(buffer[0] == 1){
+      int writetemp = write(newSocket, buffer, strlen(buffer)*sizeof(char));
+    }else if(testChar == '1'){
       char* justToken = malloc(64);
+      int tempx;
       for(tempx = 0; tempx < 64; tempx++){
         justToken[tempx] = buffer[tempx+1];
       }
       strcpy(buffer, getMyLocation(justToken));
       //buffer = getMyLocation(justToken);
-      send(newSocket, buffer, strlen(buffer), 0);
+      write(newSocket, buffer, sizeof(char)*strlen(buffer));
       free(justToken);
-    }else if(buffer[0] == 2){
+    }else if(testChar == '2'){
       buffer[0] = updateMyLocation(message);
+      buffer[1] = '[';
       //buffer = updateMyLocation(message);
       send(newSocket, buffer, strlen(buffer), 0);
-    }else if(buffer[0] == 3){
+    }else if(testChar == '3'){
+	    printf("3 thing%s\n", buffer);
       strcpy(buffer, findMyFriendLocation(message));
       //buffer = findMyFriendLocation(message);
       send(newSocket, buffer, strlen(buffer), 0);
     }else{
-      buffer[0] = 0;
-      send(newSocket, buffer, strlen(buffer), 0);
+      printf("NOTHIN MATCHED");
+      break;
     }
-
-    free(message);
-
+    free(buffer);
   }
+}
   return 0;
 }
