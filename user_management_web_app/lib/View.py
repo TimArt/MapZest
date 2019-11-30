@@ -4,6 +4,7 @@
 A View is an HTML rendering of a page.
 """
 
+
 class View:
 
     html_file = ""

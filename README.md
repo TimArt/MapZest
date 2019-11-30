@@ -1,16 +1,22 @@
 # MapZest
 Source code for MapZest system.
 
-## Python Setup
-We used the **mod_wsgi** interface to communicate with Apache. To setup Python,
-Apache, and mod_wsgi, [see the setup documentsion](https://modwsgi.readthedocs.io/en/develop/user-guides/quick-installation-guide.html).
+Here's a map of the various directories of the repository:
+```
+client -> unused folder
+cybersec -> Java Client Source Code
+database -> PostgreSQL Database Init Scripts
+server -> unsued folder
+user_management_web_app -> Python User Management App Source Code
+CServer.c -> C Server file
+```
 
-## Database Setup
+## Setup
+
+### Database Setup (PostgreSQL)
 _Requires PostgreSQL 11 or Higher_
 
-### Setup of Database
-
-1. Make sure PostgreSQL is running using the associated Linux command
+1. Make sure the PostgreSQL daemon is running using the associated Linux command
 (Google this).
 
 2. Change directory to the database directory inside this project folder.
@@ -29,7 +35,40 @@ tables and stored procedures/functions.
 \i mapzest-postgresql-db-init.sql
 ```
 
-### Using the Database
+### User Management Web App (Python App) Setup
+We used the **mod_wsgi** WSGI Apache Module interface to communicate with Apache.
+To install mod_wsgi on your system and get the app running, follow this tutorial:
+https://modwsgi.readthedocs.io/en/develop/user-guides/quick-installation-guide.html
+
+After downloading, and building mod_wsgi, setup the Apache configuration file
+using the following lines outside of any virtual host config blocks:
+```apache
+# Setup site root to run the main application
+WSGIScriptAlias / /path/to/MapZest/user_management_web_app/main.py
+
+# Tell python the directory to search for other modules in
+WSGIPythonPath "/path/to/MapZest/user_management_web_app:"
+
+# Setup a Daemon Process to run the app and set current working directory app
+# to be the project folder (the home option does this)
+WSGIDaemonProcess website.com user=aUser group=aUser processes=2 threads=25 home=/path/to/MapZest/user_management_web_app
+WSGIProcessGroup test.com
+```
+
+Lastly, ensure that the `user_management_web_app/lib/config.py` file gets filled
+with your database credentials. Replace the line
+```python
+POSTGRES_DB_CONNECT = "dbname=mapzest user=timarterbury"
+```
+with your credentials:
+```python
+POSTGRES_DB_CONNECT = "dbname=mapzest user=myuser password=passwordstring"
+```
+
+
+## Usage
+
+### Database Usage
 
 #### Resetting the Database
 If anything ever goes wrong and you need to start fresh, make sure you are in the
@@ -39,19 +78,7 @@ database directory and have the `psql` CLI open, then run:
 \i mapzest-postgresql-db-init.sql
 ```
 
-#### Queries for this Database
-You most likely will not need to use raw queries when using our database since
-I have written stored procedures and functions for us to use.
-
-Reasons I chose to do this:
-1. Stored Procedures / Functions can be more secure
-2. Queries are simplified and functionalized
-3. We will not need to rewrite the same queries for the Python and the C server,
-instead we can just use the stored procedures
-
 #### Running Stored Procedures and Functions
-So how do you use stored procedures / functions?
-
 1. Brefly read through the documentation of function/procedure names and
 descriptions in the file `database/mapzest-postgresql-db-init_procedures.sql`.
 This will give you an idea of the preset actions you can do without needing to
@@ -120,4 +147,18 @@ CALL set_user_active_location ('maddie@maddie.com', 54.43, 29.24);
 CALL set_user_active_location ('josh@josh.com', 3.43, 462.43);
 ```
 
+## User Management Web App (Python App) Usage
+Using the web app is pretty simple. When you first visit the site, it will
+redirect you to the `/login` page. Here you can signup or login. First create a
+user with the signup dialog. You will need a username in the form of an email
+and a password at least 8 characters long. If successful signup occurs, you will
+be directed to a page that says your account was created and says it sent you
+an email. The email functionality has been disabled, so do not worry about this.
+Go back to the login page manually and attempt a login. If you successfuly login
+you will see a new page with Friend Requests, Friends, and Potential Friends.
+If you see nothing here, go create another user so you can friend them. When more
+users are present you can then send them friend requests and they can accept those
+requests. After this you will see them in your friend list along with their last
+set location. Friends can be removed at anytime. You can log out of a certain user
+by hitting the logout button.
 
