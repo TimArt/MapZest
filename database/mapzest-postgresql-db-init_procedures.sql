@@ -345,3 +345,22 @@ AS $$
             WHERE u.email = p_email
     ) LIMIT 1;
 $$  LANGUAGE SQL;
+
+
+/** Get User Current Location From Token
+ *
+ *  Tables Modified: none
+ */
+CREATE OR REPLACE FUNCTION get_user_active_location_from_token (p_token BYTEA)
+   RETURNS TABLE (
+      latitude locations.latitude%TYPE,
+      longitude locations.longitude%TYPE,
+      created_at locations.created_at%TYPE
+    )
+AS $$
+   SELECT latitude, longitude, created_at FROM locations WHERE created_at = (
+        SELECT MAX (l.created_at) FROM locations AS l JOIN users AS u ON
+            l.user_id = u.user_id JOIN user_auth_tokens AS t ON u.user_id = t.user_id
+            WHERE t.auth_token = p_token
+    ) LIMIT 1;
+$$  LANGUAGE SQL;
