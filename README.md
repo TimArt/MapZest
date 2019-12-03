@@ -65,6 +65,20 @@ with your credentials:
 POSTGRES_DB_CONNECT = "dbname=mapzest user=myuser password=passwordstring"
 ```
 
+### C Server Setup
+To run our C server, simply compile and run the C program:
+```bash
+gcc CServer.c -lpq
+./a.out
+```
+
+### Java Client Setup
+To run our Java Client, simply compile and run the Java program"
+```bash
+javac Client.java
+java JavaClient.Client
+```
+
 
 ## Usage
 
@@ -147,7 +161,7 @@ CALL set_user_active_location ('maddie@maddie.com', 54.43, 29.24);
 CALL set_user_active_location ('josh@josh.com', 3.43, 462.43);
 ```
 
-## User Management Web App (Python App) Usage
+### User Management Web App (Python App) Usage
 Using the web app is pretty simple. When you first visit the site, it will
 redirect you to the `/login` page. Here you can signup or login. First create a
 user with the signup dialog. You will need a username in the form of an email
@@ -162,3 +176,11 @@ requests. After this you will see them in your friend list along with their last
 set location. Friends can be removed at anytime. You can log out of a certain user
 by hitting the logout button.
 
+
+### Java Client Usage
+To use the Java client simply follow the instructions in the CLI when you first
+run the program:
+- Type u For Updating Your Location
+- Type g For Getting Your Location
+- Type f For Getting a Friend's location
+- Type q To Quit
